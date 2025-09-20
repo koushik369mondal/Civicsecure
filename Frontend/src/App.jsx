@@ -5,7 +5,7 @@ import ComplaintForm from "./components/ComplaintForm";
 import Profile from "./components/Profile";
 import AadhaarVerification from "./components/AadhaarVerification";
 import Login from "./components/Login";
-import TrackStatus from "./components/Tracking";
+import Tracking from "./components/Tracking";
 import Community from "./components/shared/Community";
 import InfoHub from "./components/shared/Info";
 import { FaBars } from "react-icons/fa";
@@ -57,7 +57,7 @@ function App() {
       case "aadhaar-verify":
         return <AadhaarVerification setCurrentPage={setCurrentPage} />;
       case "track-status":
-        return <TrackStatus />;
+        return <Tracking />;
       case "info-hub":
         return <InfoHub />;
       case "community":
