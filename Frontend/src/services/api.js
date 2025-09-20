@@ -20,19 +20,19 @@ api.interceptors.request.use((config) => {
 
 export const authAPI = {
     register: (aadhaarNumber, phoneNumber) =>
-        api.post('/auth/register', { aadhaarNumber, phoneNumber }),
+        api.post('/send-otp', { phoneNumber }),
 
     verifyOTP: (phoneNumber, otp) =>
-        api.post('/auth/verify-otp', { phoneNumber, otp }),
+        api.post('/verify-otp', { phoneNumber, otp }),
 
     login: (phoneNumber) =>
-        api.post('/auth/login', { phoneNumber }),
+        api.post('/send-otp', { phoneNumber }),
 
     verifyLoginOTP: (phoneNumber, otp) =>
-        api.post('/auth/login/verify', { phoneNumber, otp }),
+        api.post('/verify-otp', { phoneNumber, otp }),
 
     getProfile: () =>
-        api.get('/auth/profile')
+        api.get('/user/profile')
 };
 
 export default api;

@@ -4,7 +4,10 @@ const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
 const { Pool } = require("pg");
-require("dotenv").config();
+const path = require("path");
+
+// Load environment variables from the correct path
+require("dotenv").config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 
@@ -15,15 +18,17 @@ app.use(cors({
   credentials: true
 }));
 
-// Express 5.1.0 middleware - handle req.body properly
-app.use((req, res, next) => {
-  express.json()(req, res, (err) => {
-    if (!req.body) req.body = {};
-    next(err);
-  });
-});
-
+// Body parsing middleware - simplified for Express 5.1.0
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Add error handling for JSON parsing
+app.use((error, req, res, next) => {
+  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+    return res.status(400).json({ success: false, message: 'Invalid JSON' });
+  }
+  next();
+});
 
 // PostgreSQL pool setup with optimized configuration
 const pool = new Pool({
@@ -211,7 +216,7 @@ const sendOTP = async (phoneNumber, otp) => {
 const cleanupExpiredOTPs = async () => {
   try {
     const result = await pool.query(
-      'DELETE FROM otp_codes WHERE otp_expiry < NOW()'
+      'DELETE FROM otp_codes WHERE expires_at < NOW()'
     );
     if (result.rowCount > 0) {
       console.log(`🧹 Cleaned up ${result.rowCount} expired OTP(s)`);
@@ -261,7 +266,7 @@ app.post("/api/send-otp", otpLimiter, async (req, res) => {
 
     // Delete any existing unused OTPs
     await client.query(
-      'DELETE FROM otp_codes WHERE phone = $1 AND (is_used = false OR otp_expiry < NOW())',
+      'DELETE FROM otp_codes WHERE phone = $1 AND (is_used = false OR expires_at < NOW())',
       [phoneNumber]
     );
 
@@ -270,7 +275,7 @@ app.post("/api/send-otp", otpLimiter, async (req, res) => {
     const expiryTime = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     await client.query(
-      'INSERT INTO otp_codes (phone, otp, otp_expiry) VALUES ($1, $2, $3)',
+      'INSERT INTO otp_codes (phone, otp, expires_at) VALUES ($1, $2, $3)',
       [phoneNumber, otp, expiryTime]
     );
 
@@ -352,7 +357,7 @@ app.post("/api/verify-otp", loginLimiter, async (req, res) => {
     const otpRecord = otpResult.rows[0];
 
     // Check expiry
-    if (new Date() > otpRecord.otp_expiry) {
+    if (new Date() > otpRecord.expires_at) {
       await client.query('DELETE FROM otp_codes WHERE id = $1', [otpRecord.id]);
       await client.query('COMMIT');
       return res.status(400).json({
@@ -756,7 +761,23 @@ app.use((req, res) => {
   });
 });
 
+// Global error handling for uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  console.error('Stack trace:', error.stack);
+  // Don't exit immediately in development to help with debugging
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+});
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit immediately in development to help with debugging
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+});
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
