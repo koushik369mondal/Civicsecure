@@ -103,6 +103,46 @@ const AadhaarVerification = ({
     setImageErrors({});
   };
 
+  // Validate Aadhaar number on blur
+  const validateAadhaarOnBlur = (value) => {
+    if (!value.trim()) {
+      setAadhaarError('');
+      return;
+    }
+
+    if (value.length !== 12) {
+      setAadhaarError('Aadhaar number must be exactly 12 digits');
+      return;
+    }
+
+    const validation = validateAadhaarNumber(value);
+    if (!validation.isValid) {
+      setAadhaarError('Invalid Aadhaar number. Please enter a valid 12-digit Aadhaar number.');
+    } else {
+      setAadhaarError('');
+    }
+  };
+
+  // Validate phone number on blur
+  const validatePhoneOnBlur = (value) => {
+    if (!value.trim()) {
+      setPhoneError('');
+      return;
+    }
+
+    if (value.length !== 10) {
+      setPhoneError('Phone number must be exactly 10 digits');
+      return;
+    }
+
+    const validation = validatePhoneNumber(value);
+    if (!validation.isValid) {
+      setPhoneError('Invalid phone number. Please enter a valid 10-digit phone number.');
+    } else {
+      setPhoneError('');
+    }
+  };
+
   // Handle input changes
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -110,26 +150,16 @@ const AadhaarVerification = ({
     // Clear specific field error when user starts typing
     switch (field) {
       case 'aadhaarNumber':
-        setAadhaarError('');
+        if (aadhaarError) setAadhaarError('');
         break;
       case 'phoneNumber':
-        setPhoneError('');
+        if (phoneError) setPhoneError('');
         break;
       case 'otp':
-        setOtpError('');
+        if (otpError) setOtpError('');
         break;
     }
     setGeneralError('');
-  };
-
-  // Real-time Aadhaar validation on blur
-  const validateAadhaarOnBlur = (aadhaarValue) => {
-    if (aadhaarValue) {
-      const validation = validateAadhaarNumber(aadhaarValue);
-      if (!validation.isValid) {
-        setAadhaarError('Invalid Aadhaar number. Please enter a valid 12-digit Aadhaar.');
-      }
-    }
   };
 
   // Handle image file selection
@@ -226,7 +256,7 @@ const AadhaarVerification = ({
       // Validate Aadhaar
       const aadhaarValidation = validateAadhaarNumber(formData.aadhaarNumber);
       if (!aadhaarValidation.isValid) {
-        setAadhaarError(aadhaarValidation.error);
+        setAadhaarError('Invalid Aadhaar number. Please enter a valid 12-digit Aadhaar number.');
         setLoading(false);
         return;
       }
@@ -234,7 +264,14 @@ const AadhaarVerification = ({
       // Validate phone
       const phoneValidation = validatePhoneNumber(formData.phoneNumber);
       if (!phoneValidation.isValid) {
-        setPhoneError(phoneValidation.error);
+        setPhoneError('Invalid phone number. Please enter a valid 10-digit phone number.');
+        setLoading(false);
+        return;
+      }
+
+      // Check if images are uploaded
+      if (!frontImage || !backImage) {
+        setGeneralError('Please upload both front and back side images of your Aadhaar card.');
         setLoading(false);
         return;
       }
@@ -267,7 +304,7 @@ const AadhaarVerification = ({
       // Validate OTP
       const otpValidation = validateOTP(formData.otp);
       if (!otpValidation.isValid) {
-        setOtpError(otpValidation.error);
+        setOtpError(otpValidation.error || 'Invalid OTP. Please enter a valid 6-digit OTP.');
         setLoading(false);
         return;
       }
@@ -383,12 +420,13 @@ const AadhaarVerification = ({
 
   // Check if form can be submitted
   const canSubmitForm = () => {
-    const hasValidAadhaar = validateAadhaarNumber(formData.aadhaarNumber).isValid;
-    const hasValidPhone = validatePhoneNumber(formData.phoneNumber).isValid;
+    const hasValidAadhaar = formData.aadhaarNumber.length === 12 && validateAadhaarNumber(formData.aadhaarNumber).isValid;
+    const hasValidPhone = formData.phoneNumber.length === 10 && validatePhoneNumber(formData.phoneNumber).isValid;
     const hasImages = frontImage && backImage;
     const noImageErrors = Object.keys(imageErrors).length === 0 || Object.values(imageErrors).every(error => !error);
+    const noFieldErrors = !aadhaarError && !phoneError;
 
-    return hasValidAadhaar && hasValidPhone && hasImages && noImageErrors;
+    return hasValidAadhaar && hasValidPhone && hasImages && noImageErrors && noFieldErrors;
   };
 
   // Cleanup on unmount
@@ -437,7 +475,16 @@ const AadhaarVerification = ({
                   required
                 />
                 {aadhaarError && (
-                  <p className="text-red-600 text-sm mt-1">{aadhaarError}</p>
+                  <div className="flex items-center mt-1">
+                    <FaExclamationTriangle className="text-red-500 text-sm mr-1" />
+                    <p className="text-red-600 text-sm">{aadhaarError}</p>
+                  </div>
+                )}
+                {formData.aadhaarNumber.length === 12 && !aadhaarError && (
+                  <div className="flex items-center mt-1">
+                    <FaCheckCircle className="text-green-500 text-sm mr-1" />
+                    <p className="text-green-600 text-sm">Valid Aadhaar number</p>
+                  </div>
                 )}
               </div>
 
@@ -450,13 +497,23 @@ const AadhaarVerification = ({
                   type="tel"
                   value={formData.phoneNumber}
                   onChange={(e) => handleInputChange('phoneNumber', e.target.value.replace(/\D/g, ''))}
+                  onBlur={(e) => validatePhoneOnBlur(e.target.value)}
                   placeholder="Enter your 10-digit phone number"
                   className={`w-full px-4 py-3 bg-white border rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${phoneError ? 'border-red-500' : 'border-gray-300'}`}
                   maxLength={10}
                   required
                 />
                 {phoneError && (
-                  <p className="text-red-600 text-sm mt-1">{phoneError}</p>
+                  <div className="flex items-center mt-1">
+                    <FaExclamationTriangle className="text-red-500 text-sm mr-1" />
+                    <p className="text-red-600 text-sm">{phoneError}</p>
+                  </div>
+                )}
+                {formData.phoneNumber.length === 10 && !phoneError && (
+                  <div className="flex items-center mt-1">
+                    <FaCheckCircle className="text-green-500 text-sm mr-1" />
+                    <p className="text-green-600 text-sm">Valid phone number</p>
+                  </div>
                 )}
               </div>
 
@@ -474,7 +531,10 @@ const AadhaarVerification = ({
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   />
                   {imageErrors.front && (
-                    <p className="text-red-600 text-sm">{imageErrors.front}</p>
+                    <div className="flex items-center">
+                      <FaExclamationTriangle className="text-red-500 text-sm mr-1" />
+                      <p className="text-red-600 text-sm">{imageErrors.front}</p>
+                    </div>
                   )}
                   {frontPreview && (
                     <div className="relative inline-block">
@@ -509,7 +569,10 @@ const AadhaarVerification = ({
                     className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   />
                   {imageErrors.back && (
-                    <p className="text-red-600 text-sm">{imageErrors.back}</p>
+                    <div className="flex items-center">
+                      <FaExclamationTriangle className="text-red-500 text-sm mr-1" />
+                      <p className="text-red-600 text-sm">{imageErrors.back}</p>
+                    </div>
                   )}
                   {backPreview && (
                     <div className="relative inline-block">
@@ -540,7 +603,7 @@ const AadhaarVerification = ({
               <div className="flex gap-4">
                 <button
                   type="submit"
-                  className={`px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-sm transition-colors duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-sm transition-colors duration-200 ${loading || !canSubmitForm() ? 'opacity-50 cursor-not-allowed' : ''}`}
                   disabled={loading || !canSubmitForm()}
                 >
                   {loading ? (
@@ -601,7 +664,10 @@ const AadhaarVerification = ({
                   required
                 />
                 {otpError && (
-                  <p className="text-red-600 text-sm mt-1">{otpError}</p>
+                  <div className="flex items-center mt-1">
+                    <FaExclamationTriangle className="text-red-500 text-sm mr-1" />
+                    <p className="text-red-600 text-sm">{otpError}</p>
+                  </div>
                 )}
               </div>
 
@@ -720,12 +786,12 @@ const AadhaarVerification = ({
                 </div>
               </div>
 
-              <p className="text-green-600 text-sm mt-4 italic font-medium flex items-center">
+              {/* <p className="text-green-600 text-sm mt-4 italic font-medium flex items-center">
                 <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
                 Verification valid for 10 minutes
-              </p>
+              </p> */}
 
               <div className="flex flex-col sm:flex-row gap-3 mt-6">
                 <button
