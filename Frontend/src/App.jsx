@@ -7,7 +7,7 @@ import AadhaarVerification from "./components/AadhaarVerification";
 import Login from "./components/Login";
 import Tracking from "./components/Tracking";
 import Community from "./components/shared/Community";
-import InfoHub from "./components/shared/Info";
+import InfoHub from "./components/InfoHub";
 import { FaBars } from "react-icons/fa";
 
 function App() {
