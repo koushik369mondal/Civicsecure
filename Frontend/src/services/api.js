@@ -35,4 +35,45 @@ export const authAPI = {
         api.get('/user/profile')
 };
 
+// Validate Aadhaar number against database
+export const validateAadhaar = async (aadhaarNumber) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/validate-aadhaar`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ aadhaarNumber })
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Aadhaar validation failed');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Aadhaar validation error:', error);
+    throw error;
+  }
+};
+
+// Get Aadhaar database statistics (for debugging)
+export const getAadhaarStats = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/aadhaar/stats`);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch stats');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Stats fetch error:', error);
+    throw error;
+  }
+};
+
 export default api;
