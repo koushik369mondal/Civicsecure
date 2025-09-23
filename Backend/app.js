@@ -157,6 +157,102 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
+// ================================
+// AADHAAR VALIDATION ROUTES
+// ================================
+
+// Validate Aadhaar number against database
+app.post("/api/validate-aadhaar", async (req, res) => {
+  try {
+    const { aadhaarNumber } = req.body;
+
+    // Input validation
+    if (!aadhaarNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'Aadhaar number is required'
+      });
+    }
+
+    // Clean the input (remove spaces)
+    const cleanAadhaar = aadhaarNumber.replace(/\s/g, '');
+
+    // Format validation (must be exactly 12 digits)
+    if (!/^\d{12}$/.test(cleanAadhaar)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Aadhaar number must be exactly 12 digits'
+      });
+    }
+
+    // Database lookup
+    const result = await pool.query(
+      `SELECT aadhaar_number, name, gender, age, state, district 
+       FROM aadhaar_dataset 
+       WHERE aadhaar_number = $1 AND is_active = true`,
+      [cleanAadhaar]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Aadhaar number not found in records'
+      });
+    }
+
+    const aadhaarData = result.rows[0];
+
+    // Return success with basic info (privacy-friendly)
+    res.json({
+      success: true,
+      message: 'Aadhaar number validated successfully',
+      data: {
+        aadhaarNumber: cleanAadhaar,
+        name: aadhaarData.name,
+        gender: aadhaarData.gender,
+        age: aadhaarData.age,
+        state: aadhaarData.state,
+        district: aadhaarData.district,
+        verified: true
+      }
+    });
+
+  } catch (error) {
+    console.error('Aadhaar validation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during validation'
+    });
+  }
+});
+
+// Get statistics (for debugging/admin)
+app.get("/api/aadhaar/stats", async (req, res) => {
+  try {
+    const stats = await pool.query(`
+      SELECT 
+        COUNT(*) as total_records,
+        COUNT(CASE WHEN gender = 'Male' THEN 1 END) as male_count,
+        COUNT(CASE WHEN gender = 'Female' THEN 1 END) as female_count,
+        COUNT(DISTINCT state) as unique_states,
+        COUNT(DISTINCT district) as unique_districts
+      FROM aadhaar_dataset 
+      WHERE is_active = true
+    `);
+
+    res.json({
+      success: true,
+      stats: stats.rows[0]
+    });
+  } catch (error) {
+    console.error('Stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch statistics'
+    });
+  }
+});
+
 app.get("/", (req, res) => res.json({ success: true, message: "CivicSecure API v2" }));
 
 // 404 + error
