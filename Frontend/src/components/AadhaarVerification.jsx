@@ -11,6 +11,7 @@ import {
   RESEND_COOLDOWN,
   isDev
 } from '../utils/otp';
+import { validateAadhaarComplete, formatAadhaar, maskAadhaar } from '../utils/aadhaar';
 import Layout from './Layout';
 
 const VERIFICATION_STORAGE_KEY = 'aadhaarVerification';
@@ -22,9 +23,11 @@ const AadhaarVerification = ({
   onVerificationComplete,
   onCancel,
   title = "Aadhaar Verification",
-  showTitle = true
+  showTitle = true,
+  mode = 'full', // 'full' for complete flow, 'simple' for direct validation
+  isRequired = true
 }) => {
-  // Form state
+  // Original complex form state
   const [step, setStep] = useState('form');
   const [formData, setFormData] = useState({
     aadhaarNumber: initialAadhaar,
@@ -55,6 +58,13 @@ const AadhaarVerification = ({
   // Verification status
   const [verificationData, setVerificationData] = useState(null);
 
+  // Simple mode state variables
+  const [aadhaarNumber, setAadhaarNumber] = useState(initialAadhaar);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState(null); // null, 'success', 'error'
+  const [errorMessage, setErrorMessage] = useState('');
+  const [verifiedData, setVerifiedData] = useState(null);
+
   // Refs for cleanup
   const otpIntervalRef = useRef(null);
   const resendIntervalRef = useRef(null);
@@ -63,8 +73,10 @@ const AadhaarVerification = ({
 
   // Check for existing verification on mount
   useEffect(() => {
-    checkExistingVerification();
-  }, []);
+    if (mode === 'full') {
+      checkExistingVerification();
+    }
+  }, [mode]);
 
   // Check if there's a valid existing verification
   const checkExistingVerification = () => {
@@ -143,7 +155,7 @@ const AadhaarVerification = ({
     }
   };
 
-  // Handle input changes
+  // Handle input changes (full mode)
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
 
@@ -411,8 +423,8 @@ const AadhaarVerification = ({
     if (onCancel) onCancel();
   };
 
-  // Mask Aadhaar number for display (show only last 4 digits)
-  const maskAadhaar = (aadhaarNumber) => {
+  // Mask Aadhaar number for display (show only last 4 digits) - Full mode
+  const maskAadhaarFull = (aadhaarNumber) => {
     if (!aadhaarNumber || aadhaarNumber.length !== 12) return 'Not provided';
     const lastFour = aadhaarNumber.slice(-4);
     return `****-****-${lastFour}`;
@@ -429,6 +441,85 @@ const AadhaarVerification = ({
     return hasValidAadhaar && hasValidPhone && hasImages && noImageErrors && noFieldErrors;
   };
 
+  // ========================
+  // SIMPLE MODE FUNCTIONS
+  // ========================
+
+  // Handle input changes (simple mode)
+  const handleSimpleAadhaarChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    if (value.length <= 12) {
+      setAadhaarNumber(value);
+      
+      // Reset verification status when user changes number
+      if (verificationStatus) {
+        setVerificationStatus(null);
+        setVerifiedData(null);
+        setErrorMessage('');
+      }
+    }
+  };
+
+  // Handle verification button click (simple mode)
+  const handleSimpleVerification = async () => {
+    if (!aadhaarNumber || aadhaarNumber.length !== 12) {
+      setErrorMessage('Please enter a complete 12-digit Aadhaar number');
+      return;
+    }
+
+    setIsVerifying(true);
+    setErrorMessage('');
+
+    try {
+      const result = await validateAadhaarComplete(aadhaarNumber);
+      
+      if (result.isValid) {
+        setVerificationStatus('success');
+        setVerifiedData(result.data);
+        setErrorMessage('');
+        
+        // Notify parent component
+        if (onVerificationComplete) {
+          onVerificationComplete({
+            success: true,
+            aadhaarNumber: aadhaarNumber,
+            data: result.data
+          });
+        }
+      } else {
+        setVerificationStatus('error');
+        setErrorMessage(result.error);
+        setVerifiedData(null);
+        
+        if (onVerificationComplete) {
+          onVerificationComplete({ success: false });
+        }
+      }
+    } catch (error) {
+      setVerificationStatus('error');
+      setErrorMessage(error.message || 'Verification failed');
+      setVerifiedData(null);
+      
+      if (onVerificationComplete) {
+        onVerificationComplete({ success: false });
+      }
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Handle reset/change button click (simple mode)
+  const handleSimpleReset = () => {
+    setAadhaarNumber('');
+    setVerificationStatus(null);
+    setVerifiedData(null);
+    setErrorMessage('');
+    
+    if (onVerificationComplete) {
+      onVerificationComplete({ success: false });
+    }
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -439,6 +530,130 @@ const AadhaarVerification = ({
     };
   }, [frontPreview, backPreview]);
 
+  // ========================
+  // RENDER LOGIC
+  // ========================
+
+  // Render Simple Mode
+  if (mode === 'simple') {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Aadhaar Verification
+            {isRequired && <span className="text-red-500 ml-1">*</span>}
+          </h3>
+          
+          {verificationStatus === 'success' && (
+            <div className="flex items-center text-green-600">
+              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              Verified ✓
+            </div>
+          )}
+        </div>
+
+        {/* Input Section */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Aadhaar Number
+            </label>
+            <div className="flex space-x-3">
+              <input
+                type="text"
+                value={verificationStatus === 'success' ? maskAadhaar(aadhaarNumber) : formatAadhaar(aadhaarNumber)}
+                onChange={handleSimpleAadhaarChange}
+                placeholder="1234 5678 9012"
+                className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  verificationStatus === 'success' 
+                    ? 'border-green-500 bg-green-50' 
+                    : verificationStatus === 'error'
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-gray-300'
+                }`}
+                disabled={verificationStatus === 'success' || isVerifying}
+                maxLength="14" // Including spaces
+              />
+              
+              {verificationStatus !== 'success' ? (
+                <button
+                  onClick={handleSimpleVerification}
+                  disabled={isVerifying || aadhaarNumber.length !== 12}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center min-w-[100px]"
+                >
+                  {isVerifying ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                        <path fill="currentColor" strokeOpacity="0.75" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Verifying...
+                    </>
+                  ) : (
+                    'Verify'
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={handleSimpleReset}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                >
+                  Change
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="flex items-center text-red-600 bg-red-50 p-3 rounded-md">
+              <svg className="w-5 h-5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm">{errorMessage}</span>
+            </div>
+          )}
+
+          {/* Success Message & Data */}
+          {verifiedData && verificationStatus === 'success' && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-4">
+              <h4 className="text-sm font-semibold text-green-800 mb-2">✅ Verification Details</h4>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="font-medium text-gray-700">Name:</span>
+                  <span className="ml-2 text-gray-900">{verifiedData.name || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">Gender:</span>
+                  <span className="ml-2 text-gray-900">{verifiedData.gender || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">State:</span>
+                  <span className="ml-2 text-gray-900">{verifiedData.state || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="font-medium text-gray-700">District:</span>
+                  <span className="ml-2 text-gray-900">{verifiedData.district || 'N/A'}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Help Text */}
+          <div className="text-xs text-gray-600 space-y-1">
+            <p>• Enter your 12-digit Aadhaar number without spaces</p>
+            <p>• This is a demo verification system for testing purposes</p>
+            <p>• Your data is secure and not stored permanently</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render Full Mode (Original Complex Flow)
   return (
     <Layout>
       <div className="w-full max-w-4xl mx-auto">
@@ -756,7 +971,7 @@ const AadhaarVerification = ({
                     Aadhaar:
                   </span>
                   <span className="text-gray-900 font-mono text-lg">
-                    {maskAadhaar(formData.aadhaarNumber)}
+                    {maskAadhaarFull(formData.aadhaarNumber)}
                   </span>
                 </div>
 
@@ -786,13 +1001,6 @@ const AadhaarVerification = ({
                 </div>
               </div>
 
-              {/* <p className="text-green-600 text-sm mt-4 italic font-medium flex items-center">
-                <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-                Verification valid for 10 minutes
-              </p> */}
-
               <div className="flex flex-col sm:flex-row gap-3 mt-6">
                 <button
                   onClick={handleVerifyDifferent}
@@ -816,6 +1024,6 @@ const AadhaarVerification = ({
       </div>
     </Layout>
   );
-};
+}
 
 export default AadhaarVerification;
