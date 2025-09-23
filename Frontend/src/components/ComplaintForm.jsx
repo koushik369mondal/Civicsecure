@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Layout from "./Layout";
+import AadhaarVerification from './AadhaarVerification';
 
 function ComplaintForm() {
   const [category, setCategory] = useState("");
@@ -9,14 +10,34 @@ function ComplaintForm() {
   const [attachments, setAttachments] = useState([]);
   const [uploading, setUploading] = useState(false);
 
+  // Aadhaar verification state
+  const [aadhaarVerified, setAadhaarVerified] = useState(false);
+  const [aadhaarData, setAadhaarData] = useState(null);
+
   // Simple local file selection handler; files stored but not uploaded yet
   const handleAttachmentChange = (e) => {
     const files = Array.from(e.target.files);
     setAttachments(files);
   };
 
+  // Handle Aadhaar verification results
+  const handleAadhaarVerification = (result) => {
+    setAadhaarVerified(result.success);
+    setAadhaarData(result.data || null);
+    
+    if (result.success) {
+      console.log('Aadhaar verified for:', result.data?.name);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check if reporter type is verified and Aadhaar is required
+    if (reporterType === "verified" && !aadhaarVerified) {
+      alert('Please verify your Aadhaar number before submitting a verified complaint');
+      return;
+    }
 
     // Simulate uploading for 2 seconds (disable submit while uploading)
     setUploading(true);
@@ -30,6 +51,8 @@ function ComplaintForm() {
       setLocation("");
       setReporterType("anonymous");
       setAttachments([]);
+      setAadhaarVerified(false);
+      setAadhaarData(null);
     }, 2000);
   };
 
@@ -42,6 +65,34 @@ function ComplaintForm() {
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Aadhaar Verification Section - Only show when "Verified (Aadhaar)" is selected */}
+            {reporterType === "verified" && (
+              <div className="w-full">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Identity Verification
+                </h3>
+                <AadhaarVerification
+                  mode="simple"
+                  onVerificationComplete={handleAadhaarVerification}
+                  isRequired={true}
+                />
+                
+                {/* Show verification status */}
+                {aadhaarVerified && aadhaarData && (
+                  <div className="bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-sm font-medium text-green-800">
+                        ✅ Identity verified for <strong>{aadhaarData.name}</strong>
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="w-full">
               <label className="block mb-2">
                 <span className="text-sm font-medium text-gray-900">
@@ -144,14 +195,27 @@ function ComplaintForm() {
               )}
             </div>
 
-            <div className="flex justify-end pt-4">
-              <button
-                type="submit"
-                disabled={uploading}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-semibold transition-colors w-full sm:w-auto"
-              >
-                Submit Complaint
-              </button>
+            <div className="pt-4">
+              {reporterType === "verified" && !aadhaarVerified && (
+                <div className="bg-orange-50 border border-orange-200 p-3 rounded-md mb-4">
+                  <p className="text-sm text-orange-700 text-center">
+                    ⚠️ Please complete Aadhaar verification to submit a verified complaint
+                  </p>
+                </div>
+              )}
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={uploading || (reporterType === "verified" && !aadhaarVerified)}
+                  className={`px-6 py-3 rounded-md font-semibold transition-colors w-full sm:w-auto ${
+                    uploading || (reporterType === "verified" && !aadhaarVerified)
+                      ? 'bg-gray-400 cursor-not-allowed text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                  }`}
+                >
+                  {uploading ? 'Submitting...' : 'Submit Complaint'}
+                </button>
+              </div>
             </div>
           </form>
         </div>
