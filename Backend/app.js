@@ -12,7 +12,45 @@ const app = express();
 // Core middleware
 app.use(helmet()); // secure headers [web:71][web:79]
 app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:3000", credentials: true })); // CORS [web:78][web:75]
-app.use(express.json());
+
+// Body parsing middleware with error handling
+app.use(express.json({ 
+  limit: '10mb',
+  verify: (req, res, buf, encoding) => {
+    // Store raw body for debugging if needed
+    req.rawBody = buf;
+  }
+}));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Enhanced request logging middleware for debugging
+app.use((req, res, next) => {
+  const contentType = req.headers['content-type'] || 'undefined';
+  const contentLength = req.headers['content-length'] || '0';
+  
+  console.log(`\n📝 Request Details:`);
+  console.log(`   Method: ${req.method}`);
+  console.log(`   Path: ${req.path}`);
+  console.log(`   Content-Type: ${contentType}`);
+  console.log(`   Content-Length: ${contentLength}`);
+  console.log(`   Body exists: ${!!req.body}`);
+  console.log(`   Body type: ${typeof req.body}`);
+  
+  next();
+});
+
+// JSON parsing error handler
+app.use((error, req, res, next) => {
+  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+    console.error('🚨 JSON Parse Error:', error.message);
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON format in request body',
+      error: 'Malformed JSON'
+    });
+  }
+  next();
+});
 
 // PG pool
 const pool = new Pool({
@@ -44,6 +82,40 @@ const validatePhone = (p) => /^\+91[6-9]\d{9}$/.test(p); // simple India format
 const genOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 const signToken = (uid, phone) => jwt.sign({ uid, phone }, process.env.JWT_SECRET || "change-me", { expiresIn: "30d" });
 
+// Utility middleware for JSON validation
+const requireJsonBody = (requiredFields = []) => {
+  return (req, res, next) => {
+    console.log('\n🔍 JSON Body Validation Middleware:');
+    console.log('   Content-Type:', req.headers['content-type']);
+    console.log('   Body exists:', !!req.body);
+    console.log('   Body type:', typeof req.body);
+    
+    if (!req.body || typeof req.body !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: 'Request body must be valid JSON',
+        code: 'INVALID_BODY',
+        hint: 'Make sure to set Content-Type: application/json header'
+      });
+    }
+    
+    // Check required fields
+    for (const field of requiredFields) {
+      if (!(field in req.body) || req.body[field] === undefined || req.body[field] === null) {
+        return res.status(400).json({
+          success: false,
+          message: `Missing required field: ${field}`,
+          code: 'MISSING_FIELD',
+          requiredFields,
+          receivedFields: Object.keys(req.body)
+        });
+      }
+    }
+    
+    next();
+  };
+};
+
 // Dev SMS
 const sendOTP = async (phone, otp) => {
   if (process.env.NODE_ENV !== "production") {
@@ -68,6 +140,42 @@ const auth = async (req, res, next) => {
     return res.status(401).json({ success: false, message: e.name === "TokenExpiredError" ? "Token expired" : "Invalid token" });
   }
 };
+
+// ================================
+// UTILITY ROUTES FOR DEBUGGING
+// ================================
+
+// Test route to debug request body parsing
+app.post("/api/test-body", (req, res) => {
+  console.log('\n🧪 Test Body Route Debug:');
+  console.log('   Raw headers:', req.headers);
+  console.log('   Content-Type:', req.headers['content-type']);
+  console.log('   Content-Length:', req.headers['content-length']);
+  console.log('   Body exists:', !!req.body);
+  console.log('   Body type:', typeof req.body);
+  console.log('   Body value:', req.body);
+  console.log('   Body constructor:', req.body?.constructor?.name);
+  console.log('   Keys in body:', req.body ? Object.keys(req.body) : 'N/A');
+  
+  res.json({
+    success: true,
+    message: 'Request body parsing test',
+    debug: {
+      contentType: req.headers['content-type'],
+      contentLength: req.headers['content-length'],
+      bodyExists: !!req.body,
+      bodyType: typeof req.body,
+      bodyConstructor: req.body?.constructor?.name,
+      bodyKeys: req.body ? Object.keys(req.body) : null,
+      bodyValue: req.body,
+      timestamp: new Date().toISOString()
+    }
+  });
+});
+
+// ================================
+// MAIN API ROUTES  
+// ================================
 
 // Routes
 app.post("/api/send-otp", otpLimiter, async (req, res) => {
@@ -162,15 +270,28 @@ app.get("/api/health", async (req, res) => {
 // ================================
 
 // Validate Aadhaar number against database
-app.post("/api/validate-aadhaar", async (req, res) => {
+app.post("/api/validate-aadhaar", requireJsonBody(['aadhaarNumber']), async (req, res) => {
   try {
+    console.log('\n🔍 Aadhaar Validation Request:');
+    console.log('   Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('   Body:', JSON.stringify(req.body, null, 2));
+    console.log('   Body type:', typeof req.body);
+    console.log('   Body constructor:', req.body?.constructor?.name || 'N/A');
+    
+    // At this point, we know req.body exists and has aadhaarNumber
     const { aadhaarNumber } = req.body;
-
-    // Input validation
-    if (!aadhaarNumber) {
+    
+    console.log('   Extracted aadhaarNumber:', aadhaarNumber);
+    
+    // Type validation for aadhaarNumber
+    if (typeof aadhaarNumber !== 'string' && typeof aadhaarNumber !== 'number') {
+      console.error('❌ Aadhaar number has invalid type:', typeof aadhaarNumber);
       return res.status(400).json({
         success: false,
-        message: 'Aadhaar number is required'
+        message: 'Aadhaar number must be a string or number',
+        code: 'INVALID_AADHAAR_TYPE',
+        receivedType: typeof aadhaarNumber,
+        receivedValue: aadhaarNumber
       });
     }
 
