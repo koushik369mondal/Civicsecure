@@ -7,63 +7,17 @@ import {
   FaTimes,
 } from "react-icons/fa";
 import Layout from "./Layout";
+import { complaintAPI } from "../services/api";
 
 const STATUS_STEPS = [
   { label: "Pending", color: "bg-yellow-500" },
-  { label: "In Review", color: "bg-blue-500" },
+  { label: "In Progress", color: "bg-blue-500" }, // Updated to match database values
   { label: "Resolved", color: "bg-green-500" },
 ];
 
-const QUICK_LIST = [
-  { id: "12345", title: "Pothole near Market Road", status: "In Review" },
-  { id: "67890", title: "Street Light not working", status: "Resolved" },
-  { id: "54321", title: "Garbage collection delay", status: "Pending" },
-];
-
-const MOCK = {
-  "12345": {
-    id: "12345",
-    title: "Pothole near Market Road",
-    status: "In Review",
-    lastUpdate: "2025-09-12",
-    department: "Municipal Corporation",
-    location: "Market Road, Ward 12",
-    description:
-      "Major pothole causing slow traffic and minor accidents during rain.",
-    history: [
-      { step: "Pending", date: "2025-09-10", remark: "Complaint filed" },
-      { step: "In Review", date: "2025-09-12", remark: "Assigned to officer" },
-    ],
-  },
-  "67890": {
-    id: "67890",
-    title: "Street Light not working",
-    status: "Resolved",
-    lastUpdate: "2025-09-10",
-    department: "Electricity Board",
-    location: "Main Street, Block A",
-    description: "Two consecutive lights are off, lane stays dark at night.",
-    history: [
-      { step: "Pending", date: "2025-09-08", remark: "Complaint filed" },
-      { step: "In Review", date: "2025-09-09", remark: "Inspection scheduled" },
-      { step: "Resolved", date: "2025-09-10", remark: "Issue fixed" },
-    ],
-  },
-  "54321": {
-    id: "54321",
-    title: "Garbage collection delay",
-    status: "Pending",
-    lastUpdate: "2025-09-14",
-    department: "Sanitation",
-    location: "Green Valley Apartments",
-    description: "No pickup for the last 3 days, bins overflowing.",
-    history: [{ step: "Pending", date: "2025-09-14", remark: "Complaint filed" }],
-  },
-};
-
 function getStatusPill(status) {
-  if (status === "Resolved") return "text-green-700 bg-green-100";
-  if (status === "In Review") return "text-blue-700 bg-blue-100";
+  if (status === "resolved" || status === "Resolved") return "text-green-700 bg-green-100";
+  if (status === "in-progress" || status === "In Progress" || status === "In Review") return "text-blue-700 bg-blue-100";
   return "text-amber-700 bg-amber-100";
 }
 
@@ -71,6 +25,9 @@ function Tracking() {
   const [complaintId, setComplaintId] = useState("");
   const [loading, setLoading] = useState(false);
   const [record, setRecord] = useState(null); // null | object | "not-found"
+  const [recentComplaints, setRecentComplaints] = useState([]);
+  const [loadingRecent, setLoadingRecent] = useState(true);
+  const [error, setError] = useState(null);
 
   // Align with Dashboard header scale and spacing
   const header = useMemo(
@@ -84,15 +41,119 @@ function Tracking() {
     []
   );
 
-  const runLookup = (id) => {
+  // Fetch recent complaints for quick list
+  const fetchRecentComplaints = async () => {
+    try {
+      setLoadingRecent(true);
+      const response = await complaintAPI.getComplaints({ limit: 5 });
+      if (response.success) {
+        setRecentComplaints(response.data.map(complaint => ({
+          id: complaint.complaint_id,
+          title: complaint.description.substring(0, 50) + (complaint.description.length > 50 ? '...' : ''),
+          status: formatStatus(complaint.status)
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching recent complaints:', error);
+      setRecentComplaints([]);
+    } finally {
+      setLoadingRecent(false);
+    }
+  };
+
+  // Format status from database to display format
+  const formatStatus = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'Pending';
+      case 'in-progress':
+        return 'In Progress';
+      case 'resolved':
+        return 'Resolved';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return status;
+    }
+  };
+
+  // Convert database complaint to display format
+  const formatComplaintForDisplay = (complaint) => {
+    const statusHistory = [
+      { step: "Pending", date: new Date(complaint.created_at).toLocaleDateString(), remark: "Complaint filed" }
+    ];
+    
+    // Add in-progress history if status is not pending
+    if (complaint.status !== 'pending') {
+      statusHistory.push({
+        step: "In Progress",
+        date: new Date(complaint.updated_at).toLocaleDateString(),
+        remark: "Complaint is being processed"
+      });
+    }
+    
+    // Add resolved history if complaint is resolved
+    if (complaint.status === 'resolved' && complaint.resolved_at) {
+      statusHistory.push({
+        step: "Resolved",
+        date: new Date(complaint.resolved_at).toLocaleDateString(),
+        remark: complaint.resolution_notes || "Issue has been resolved"
+      });
+    }
+
+    return {
+      id: complaint.complaint_id,
+      title: complaint.description.length > 80 
+        ? complaint.description.substring(0, 80) + '...' 
+        : complaint.description,
+      status: formatStatus(complaint.status),
+      lastUpdate: new Date(complaint.updated_at).toLocaleDateString(),
+      department: getDepartmentByCategory(complaint.category),
+      location: complaint.location_address,
+      description: complaint.description,
+      history: statusHistory
+    };
+  };
+
+  // Map categories to departments
+  const getDepartmentByCategory = (category) => {
+    const categoryMap = {
+      'road_infrastructure': 'Municipal Corporation',
+      'waste_management': 'Sanitation Department',
+      'water_supply': 'Water Board',
+      'electricity': 'Electricity Board',
+      'public_safety': 'Police Department',
+      'healthcare': 'Health Department',
+      'education': 'Education Department',
+      'other': 'General Administration'
+    };
+    return categoryMap[category] || 'General Administration';
+  };
+
+  const runLookup = async (id) => {
     if (!id || !id.trim()) return;
+    
     setLoading(true);
-    // Simulate network
-    setTimeout(() => {
-      const found = MOCK[id.trim()];
-      setRecord(found || "not-found");
+    setError(null);
+    try {
+      const response = await complaintAPI.getComplaintById(id.trim());
+      if (response.success) {
+        const formattedComplaint = formatComplaintForDisplay(response.data);
+        setRecord(formattedComplaint);
+      } else {
+        setRecord("not-found");
+      }
+    } catch (error) {
+      console.error('Error fetching complaint:', error);
+      if (error.response && error.response.status === 404) {
+        setRecord("not-found");
+      } else {
+        setError('Failed to fetch complaint details. Please try again.');
+        setRecord(null);
+      }
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   const onTrackClick = () => runLookup(complaintId);
@@ -111,6 +172,9 @@ function Tracking() {
   const showIntro = !record;
 
   useEffect(() => {
+    // Load recent complaints for quick list
+    fetchRecentComplaints();
+    
     // If Dashboard stored a selected complaint ID, prefill and search
     const saved = localStorage.getItem("selectedComplaintId");
     if (saved) {
@@ -132,6 +196,29 @@ function Tracking() {
             </p>
           </div>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className={`${header.card}`}>
+            <div className={`${header.pad}`}>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <FaTimes className="text-red-600 mr-3" />
+                  <div>
+                    <h3 className="text-red-800 font-medium">Error</h3>
+                    <p className="text-red-700 text-sm">{error}</p>
+                  </div>
+                  <button 
+                    onClick={() => setError(null)}
+                    className="ml-auto text-red-600 hover:text-red-800"
+                  >
+                    <FaTimes />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Search bar (aligned to 7xl container) */}
         <div className={`${header.card}`}>
@@ -176,30 +263,42 @@ function Tracking() {
                     Quick Track
                   </h3>
                   <p className="text-gray-600 mb-4">
-                    Click any complaint to preview tracking:
+                    Click any recent complaint to preview tracking:
                   </p>
                   <div className="space-y-3">
-                    {QUICK_LIST.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => onQuickClick(c.id)}
-                        className="w-full text-left flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition"
-                      >
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            ID: {c.id}
-                          </p>
-                          <p className="text-sm text-gray-600">{c.title}</p>
-                        </div>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusPill(
-                            c.status
-                          )}`}
+                    {loadingRecent ? (
+                      <div className="text-center py-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+                        <p className="text-sm text-gray-500 mt-2">Loading recent complaints...</p>
+                      </div>
+                    ) : recentComplaints.length > 0 ? (
+                      recentComplaints.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => onQuickClick(c.id)}
+                          className="w-full text-left flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 transition"
                         >
-                          {c.status}
-                        </span>
-                      </button>
-                    ))}
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              ID: {c.id}
+                            </p>
+                            <p className="text-sm text-gray-600">{c.title}</p>
+                          </div>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusPill(
+                              c.status
+                            )}`}
+                          >
+                            {c.status}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-gray-500">No recent complaints found</p>
+                        <p className="text-sm text-gray-400">Submit a complaint to see it here</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
