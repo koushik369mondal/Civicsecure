@@ -1,14 +1,15 @@
-import React, { useMemo, useState } from "react";
-import { FaQuestionCircle, FaBook, FaExclamationTriangle, FaPhone, FaEnvelope, FaChevronLeft, FaChevronRight, FaInfoCircle } from "react-icons/fa";
+import React, { useMemo, useState, useEffect } from "react";
+import { FaQuestionCircle, FaBook, FaExclamationTriangle, FaPhone, FaEnvelope, FaChevronLeft, FaChevronRight, FaInfoCircle, FaSpinner, FaSync } from "react-icons/fa";
 import Layout from "./Layout";
+import { schemesAPI } from "../services/api";
 
 // Local images for the carousel
 import scheme1 from "../../src/assets/scheme1.png";
 import scheme2 from "../../src/assets/scheme2.png";
 import scheme3 from "../../src/assets/scheme3.png";
 
-// Carousel schemes (image-based)
-const carouselSchemes = [
+// Carousel schemes (image-based) - Fallback data
+const defaultCarouselSchemes = [
     {
         id: "c1",
         title: "PM Awas Yojana",
@@ -60,9 +61,16 @@ const infoCards = [
 function InfoHub() {
     const [currentSchemeIndex, setCurrentSchemeIndex] = useState(0);
     const [selectedCategory, setSelectedCategory] = useState("All");
+    
+    // Dynamic data state
+    const [schemes, setSchemes] = useState([]);
+    const [carouselSchemes, setCarouselSchemes] = useState(defaultCarouselSchemes);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [lastUpdated, setLastUpdated] = useState(null);
 
-    // Rich schemes list (text/emoji based) with metadata
-    const schemes = useMemo(
+    // Default fallback schemes (your existing hardcoded data)
+    const defaultSchemes = useMemo(
         () => [
             {
                 id: 1,
@@ -74,6 +82,7 @@ function InfoHub() {
                 benefits: "Interest subsidy up to ₹2.67 lakhs",
                 applyLink: "#",
                 image: "🏠",
+                source: "Default Data"
             },
             {
                 id: 2,
@@ -85,6 +94,7 @@ function InfoHub() {
                 benefits: "Cleaner environment, improved public health",
                 applyLink: "#",
                 image: "🧹",
+                source: "Default Data"
             },
             {
                 id: 3,
@@ -96,6 +106,7 @@ function InfoHub() {
                 benefits: "Digital infrastructure, online services, digital literacy",
                 applyLink: "#",
                 image: "💻",
+                source: "Default Data"
             },
             {
                 id: 4,
@@ -107,6 +118,7 @@ function InfoHub() {
                 benefits: "₹6,000 per year in three installments",
                 applyLink: "#",
                 image: "🌾",
+                source: "Default Data"
             },
             {
                 id: 5,
@@ -118,6 +130,7 @@ function InfoHub() {
                 benefits: "Health cover up to ₹5 lakhs per family per year",
                 applyLink: "#",
                 image: "🏥",
+                source: "Default Data"
             },
             {
                 id: 6,
@@ -129,22 +142,114 @@ function InfoHub() {
                 benefits: "Ease of doing business, investment opportunities",
                 applyLink: "#",
                 image: "🏭",
+                source: "Default Data"
             },
         ],
         []
     );
 
-    const categories = [
-        "All",
-        "Housing",
-        "Healthcare",
-        "Agriculture",
-        "Technology",
-        "Sanitation",
-        "Business",
-    ];
+    // Fetch schemes data on component mount
+    useEffect(() => {
+        loadSchemesData();
+    }, []);
 
-    const filtered = selectedCategory === "All" ? schemes : schemes.filter((s) => s.category === selectedCategory);
+    const loadSchemesData = async (forceRefresh = false) => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            console.log('🔄 Loading schemes data...');
+            
+            // Fetch schemes from RSS feeds
+            const fetchedSchemes = await schemesAPI.getSchemes(!forceRefresh);
+            
+            if (fetchedSchemes && fetchedSchemes.length > 0) {
+                console.log(`✅ Loaded ${fetchedSchemes.length} schemes from RSS feeds`);
+                
+                // Combine RSS schemes with default schemes, RSS first
+                const combinedSchemes = [...fetchedSchemes, ...defaultSchemes];
+                setSchemes(combinedSchemes);
+                
+                // Update carousel with top RSS schemes + defaults
+                const carouselData = fetchedSchemes.slice(0, 3).map((scheme, index) => ({
+                    id: `rss-${scheme.id}-${index}`,
+                    title: scheme.title,
+                    description: scheme.description,
+                    image: generateSchemeImage(scheme.title, scheme.category),
+                    category: scheme.category,
+                    source: 'Government RSS Feed',
+                    applyLink: scheme.applyLink
+                }));
+                
+                // If we have enough RSS schemes, use them; otherwise combine with defaults
+                if (carouselData.length >= 3) {
+                    setCarouselSchemes(carouselData);
+                } else {
+                    // Add source info to default schemes when mixed with RSS
+                    const updatedDefaults = defaultCarouselSchemes.map(scheme => ({
+                        ...scheme,
+                        source: 'Default Data'
+                    }));
+                    setCarouselSchemes([...carouselData, ...updatedDefaults].slice(0, 6));
+                }
+                setLastUpdated(new Date().toLocaleString());
+            } else {
+                // Fallback to default schemes
+                console.log('⚠️ No RSS schemes fetched, using default schemes');
+                setSchemes(defaultSchemes);
+                setCarouselSchemes(defaultCarouselSchemes);
+            }
+            
+        } catch (err) {
+            console.error('❌ Error loading schemes:', err);
+            setError(err.message || 'Failed to load latest government schemes');
+            
+            // Use default data on error
+            setSchemes(defaultSchemes);
+            setCarouselSchemes(defaultCarouselSchemes);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Generate placeholder image for schemes
+    const generateSchemeImage = (title, category) => {
+        // Define category-based colors and emojis for better visual appeal
+        const categoryStyles = {
+            'Housing': { color: '4F46E5', emoji: '🏠' },
+            'Healthcare': { color: 'EF4444', emoji: '🏥' },
+            'Agriculture': { color: '10B981', emoji: '🌾' },
+            'Technology': { color: '8B5CF6', emoji: '💻' },
+            'Education': { color: 'F59E0B', emoji: '📚' },
+            'Employment': { color: '6366F1', emoji: '💼' },
+            'Finance': { color: '059669', emoji: '💰' },
+            'Sanitation': { color: 'D97706', emoji: '🧹' },
+            'Transportation': { color: '2563EB', emoji: '🚌' },
+            'Energy': { color: 'DC2626', emoji: '⚡' },
+            'Business': { color: '6366F1', emoji: '🏭' },
+            'General': { color: '6B7280', emoji: '📋' }
+        };
+        
+        const style = categoryStyles[category] || categoryStyles['General'];
+        const shortTitle = encodeURIComponent(title.substring(0, 25));
+        
+        // Create a visually appealing placeholder with emoji and title
+        return `https://via.placeholder.com/400x200/${style.color}/FFFFFF?text=${style.emoji}+${shortTitle}`;
+    };
+
+    // Get unique categories from schemes
+    const categories = useMemo(() => {
+        if (!schemes.length) return ["All"];
+        const uniqueCategories = [...new Set(schemes.map(s => s.category))];
+        return ["All", ...uniqueCategories.sort()];
+    }, [schemes]);
+
+    // Filter schemes by category
+    const filtered = useMemo(() => {
+        return selectedCategory === "All" 
+            ? schemes 
+            : schemes.filter(s => s.category === selectedCategory);
+    }, [schemes, selectedCategory]);
 
     const getCategoryColor = (category) => {
         const map = {
@@ -154,6 +259,12 @@ function InfoHub() {
             Technology: "bg-purple-600",
             Sanitation: "bg-amber-500",
             Business: "bg-indigo-600",
+            Education: "bg-yellow-500",
+            Employment: "bg-indigo-600",
+            Finance: "bg-emerald-600",
+            Transportation: "bg-blue-600",
+            Energy: "bg-red-600",
+            General: "bg-gray-500",
         };
         return map[category] || "bg-gray-500";
     };
@@ -169,25 +280,114 @@ function InfoHub() {
         return visible;
     };
 
+    // Auto-rotate carousel
+    useEffect(() => {
+        if (carouselSchemes.length > 0) {
+            const interval = setInterval(nextScheme, 5000); // Auto-rotate every 5 seconds
+            return () => clearInterval(interval);
+        }
+    }, [carouselSchemes.length]);
+
+    // Loading component
+    if (loading) {
+        return (
+            <Layout>
+                <div className="w-full max-w-7xl mx-auto space-y-8">
+                    <div className="flex items-center mb-2">
+                        <FaSpinner className="text-3xl text-emerald-600 mr-3 animate-spin" />
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">Information Hub</h1>
+                            <p className="text-gray-700 text-base">Loading latest government schemes...</p>
+                        </div>
+                    </div>
+                    
+                    {/* Loading skeleton */}
+                    <div className="animate-pulse space-y-8">
+                        <div className="bg-gray-300 rounded-lg h-64"></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[...Array(6)].map((_, i) => (
+                                <div key={i} className="bg-gray-300 rounded-lg h-48"></div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </Layout>
+        );
+    }
+
     return (
         <Layout>
             <div className="w-full max-w-7xl mx-auto space-y-8">
                 {/* Header */}
-                <div className="flex items-center mb-2">
-                    <FaInfoCircle className="text-3xl text-emerald-600 mr-3" />
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Information Hub</h1>
-                        <p className="text-gray-700 text-base">
-                            Explore government schemes and platform resources designed to benefit citizens
-                        </p>
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                        <FaInfoCircle className="text-3xl text-emerald-600 mr-3" />
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">Information Hub</h1>
+                            <p className="text-gray-700 text-base">
+                                Explore government schemes and platform resources designed to benefit citizens
+                                {lastUpdated && (
+                                    <span className="text-sm text-gray-500 block">
+                                        Last updated: {lastUpdated}
+                                    </span>
+                                )}
+                            </p>
+                        </div>
                     </div>
+                    
+                    <button
+                        onClick={() => loadSchemesData(true)}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-semibold rounded-md shadow-sm transition-colors duration-200"
+                        title="Refresh schemes data"
+                    >
+                        <FaSync className={loading ? 'animate-spin' : ''} />
+                        Refresh
+                    </button>
                 </div>
+
+                {/* Error message */}
+                {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                            <p className="text-red-800 text-sm">
+                                ⚠️ {error}
+                            </p>
+                            <button
+                                onClick={() => loadSchemesData(true)}
+                                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Government Schemes Carousel */}
                 <section className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-semibold text-gray-900">Latest Government Schemes & Policies</h2>
-                        <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-sm transition-colors duration-200">
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-xl font-semibold text-gray-900">
+                                Latest Government Schemes & Policies
+                            </h2>
+                            {carouselSchemes.some(s => s.source === 'Government RSS Feed') && (
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-flex items-center px-3 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
+                                        <span className="w-2 h-2 bg-green-600 rounded-full mr-2 animate-pulse"></span>
+                                        Live from RSS Feeds
+                                    </span>
+                                    {lastUpdated && (
+                                        <span className="text-xs text-gray-500">
+                                            Updated: {lastUpdated}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        <button 
+                            onClick={() => setSelectedCategory("All")}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-sm transition-colors duration-200"
+                        >
                             View All
                         </button>
                     </div>
@@ -206,12 +406,43 @@ function InfoHub() {
                                 {getVisibleSchemes().map((scheme, index) => (
                                     <div
                                         key={`${scheme.id}-${index}`}
-                                        className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden"
+                                        className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden group"
+                                        onClick={() => scheme.applyLink && scheme.applyLink !== '#' && window.open(scheme.applyLink, '_blank')}
                                     >
-                                        <img src={scheme.image} alt={scheme.title} className="w-full h-32 object-cover" />
+                                        <div className="relative">
+                                            <img 
+                                                src={scheme.image} 
+                                                alt={scheme.title}
+                                                className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-200"
+                                                onError={(e) => {
+                                                    e.target.src = generateSchemeImage(scheme.title, scheme.category || 'General');
+                                                }}
+                                            />
+                                            {scheme.source && (
+                                                <div className="absolute top-2 right-2">
+                                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                                        scheme.source === 'Government RSS Feed' 
+                                                        ? 'bg-green-100 text-green-800' 
+                                                        : 'bg-gray-100 text-gray-600'
+                                                    }`}>
+                                                        {scheme.source === 'Government RSS Feed' ? '🔴 Live' : '📋 Default'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
                                         <div className="p-4">
-                                            <h3 className="font-semibold text-gray-900 text-sm mb-2">{scheme.title}</h3>
-                                            <p className="text-gray-600 text-xs">{scheme.description}</p>
+                                            <h3 className="font-semibold text-gray-900 text-sm mb-2 line-clamp-2 group-hover:text-emerald-600 transition-colors">
+                                                {scheme.title}
+                                            </h3>
+                                            <p className="text-gray-600 text-xs line-clamp-2 mb-3">
+                                                {scheme.description}
+                                            </p>
+                                            {scheme.applyLink && scheme.applyLink !== '#' && (
+                                                <div className="flex items-center text-xs text-emerald-600 hover:text-emerald-700">
+                                                    <span className="mr-1">🔗</span>
+                                                    Click to learn more
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -230,7 +461,7 @@ function InfoHub() {
                     <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
                         <p className="text-green-800 text-sm text-center">
                             <span className="mr-2">💡</span>
-                            <strong>Tip:</strong> Stay updated with these schemes to unlock benefits for you and your community!
+                            <strong>Live Updates:</strong> These schemes are fetched from official government RSS feeds and updated automatically!
                         </p>
                     </div>
                 </section>
@@ -239,16 +470,24 @@ function InfoHub() {
                 <section className="bg-white rounded-lg shadow-md border border-gray-200">
                     <div className="p-6">
                         <div className="flex flex-wrap justify-center gap-2">
-                            {categories.map((c) => {
-                                const active = selectedCategory === c;
+                            {categories.map((category) => {
+                                const active = selectedCategory === category;
                                 return (
                                     <button
-                                        key={c}
-                                        onClick={() => setSelectedCategory(c)}
-                                        className={`px-4 py-2 rounded-full text-sm font-medium transition ${active ? "bg-green-600 text-white shadow-sm" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                            }`}
+                                        key={category}
+                                        onClick={() => setSelectedCategory(category)}
+                                        className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+                                            active 
+                                                ? "bg-green-600 text-white shadow-sm" 
+                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        }`}
                                     >
-                                        {c}
+                                        {category}
+                                        {category !== "All" && (
+                                            <span className="ml-2 text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">
+                                                {schemes.filter(s => s.category === category).length}
+                                            </span>
+                                        )}
                                     </button>
                                 );
                             })}
@@ -256,60 +495,89 @@ function InfoHub() {
                     </div>
                 </section>
 
-                {/* Schemes Grid with metadata */}
+                {/* Schemes Grid */}
                 <section>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filtered.map((s) => (
-                            <div
-                                key={s.id}
-                                className="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow"
+                    {filtered.length === 0 ? (
+                        <div className="text-center py-12">
+                            <p className="text-gray-600">No schemes found for the selected category.</p>
+                            <button
+                                onClick={() => setSelectedCategory("All")}
+                                className="mt-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors"
                             >
-                                <div className="p-6 h-full flex flex-col">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <span className="text-4xl" aria-hidden>
-                                            {s.image}
-                                        </span>
-                                        <span
-                                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-white ${getCategoryColor(
-                                                s.category
-                                            )}`}
-                                        >
-                                            {s.category}
-                                        </span>
-                                    </div>
-
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{s.title}</h3>
-                                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">{s.description}</p>
-
-                                    <div className="space-y-2 mb-4">
-                                        <div>
-                                            <span className="text-xs font-semibold text-gray-700">Eligibility:</span>
-                                            <p className="text-xs text-gray-600">{s.eligibility}</p>
+                                View All Schemes
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filtered.map((scheme) => (
+                                <div
+                                    key={scheme.id}
+                                    className="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow"
+                                >
+                                    <div className="p-6 h-full flex flex-col">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-4xl" aria-hidden="true">
+                                                {scheme.image}
+                                            </span>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <span
+                                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-white ${getCategoryColor(
+                                                        scheme.category
+                                                    )}`}
+                                                >
+                                                    {scheme.category}
+                                                </span>
+                                                {scheme.source && (
+                                                    <span className="text-xs text-gray-500">
+                                                        {scheme.source}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span className="text-xs font-semibold text-gray-700">Benefits:</span>
-                                            <p className="text-xs text-gray-600">{s.benefits}</p>
-                                        </div>
-                                    </div>
 
-                                    <div className="mt-auto flex gap-2">
-                                        <a
-                                            href={s.applyLink || "#"}
-                                            className="inline-flex justify-center items-center px-4 py-2 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors flex-1"
-                                        >
-                                            Learn More
-                                        </a>
-                                        <a
-                                            href={s.applyLink || "#"}
-                                            className="inline-flex justify-center items-center px-4 py-2 rounded-md border border-green-300 text-gray-900 hover:bg-green-50 hover:border-green-400 text-sm font-medium transition-colors"
-                                        >
-                                            Apply
-                                        </a>
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                                            {scheme.title}
+                                        </h3>
+                                        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                                            {scheme.description}
+                                        </p>
+
+                                        <div className="space-y-2 mb-4">
+                                            <div>
+                                                <span className="text-xs font-semibold text-gray-700">Eligibility:</span>
+                                                <p className="text-xs text-gray-600 line-clamp-2">{scheme.eligibility}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-semibold text-gray-700">Benefits:</span>
+                                                <p className="text-xs text-gray-600 line-clamp-2">{scheme.benefits}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-auto flex gap-2">
+                                            <a
+                                                href={scheme.applyLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex justify-center items-center px-4 py-2 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors flex-1"
+                                            >
+                                                Learn More
+                                            </a>
+                                            {scheme.applyLink !== '#' && (
+                                                <a
+                                                    href={scheme.applyLink}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex justify-center items-center px-4 py-2 rounded-md border border-green-300 text-gray-900 hover:bg-green-50 hover:border-green-400 text-sm font-medium transition-colors"
+                                                >
+                                                    Apply
+                                                </a>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </section>
 
                 {/* Quick Access Resources */}
