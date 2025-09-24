@@ -11,7 +11,14 @@ const app = express();
 
 // Core middleware
 app.use(helmet()); // secure headers [web:71][web:79]
-app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:3000", credentials: true })); // CORS [web:78][web:75]
+app.use(cors({ 
+  origin: [
+    process.env.FRONTEND_URL || "http://localhost:3000", 
+    "http://localhost:5173",
+    "http://localhost:5174"
+  ], 
+  credentials: true 
+})); // CORS [web:78][web:75]
 
 // Body parsing middleware with error handling
 app.use(express.json({ 
