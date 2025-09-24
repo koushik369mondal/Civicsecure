@@ -1,23 +1,129 @@
-import React, { useEffect } from "react";
-import { FaExclamationTriangle, FaCheckCircle, FaClock, FaEye, FaPlus } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import { FaExclamationTriangle, FaCheckCircle, FaClock, FaEye, FaPlus, FaSpinner } from "react-icons/fa";
 import Layout from "./Layout";
+import { complaintAPI } from "../services/api";
 
 function Dashboard({ setCurrentPage }) {
-  const stats = [
-    { label: "Total Complaints", value: "24", icon: FaExclamationTriangle, color: "text-green-600" },
-    { label: "Resolved", value: "18", icon: FaCheckCircle, color: "text-green-700" },
-    { label: "Pending", value: "6", icon: FaClock, color: "text-amber-500" },
-    { label: "In Review", value: "3", icon: FaEye, color: "text-blue-600" }
-  ];
+  // State for dynamic data
+  const [stats, setStats] = useState([
+    { label: "Total Complaints", value: "0", icon: FaExclamationTriangle, color: "text-green-600" },
+    { label: "Resolved", value: "0", icon: FaCheckCircle, color: "text-green-700" },
+    { label: "Pending", value: "0", icon: FaClock, color: "text-amber-500" },
+    { label: "In Progress", value: "0", icon: FaEye, color: "text-blue-600" }
+  ]);
 
-  const recentComplaints = [
-    { id: "CMP-2024-001", category: "Safety", status: "Pending", date: "2025-09-12" },
-    { id: "CMP-2024-002", category: "Civic", status: "Resolved", date: "2025-09-11" },
-    { id: "CMP-2024-003", category: "Disaster", status: "In Review", date: "2025-09-10" }
-  ];
+  const [recentComplaints, setRecentComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Initialize Tawk.to chat bot
+  // Fetch complaint statistics from API
+  const fetchComplaintStats = async () => {
+    try {
+      const response = await complaintAPI.getComplaintStats();
+      if (response.success) {
+        const { overview } = response.data;
+        setStats([
+          { 
+            label: "Total Complaints", 
+            value: overview.total_complaints || "0", 
+            icon: FaExclamationTriangle, 
+            color: "text-green-600" 
+          },
+          { 
+            label: "Resolved", 
+            value: overview.resolved || "0", 
+            icon: FaCheckCircle, 
+            color: "text-green-700" 
+          },
+          { 
+            label: "Pending", 
+            value: overview.pending || "0", 
+            icon: FaClock, 
+            color: "text-amber-500" 
+          },
+          { 
+            label: "In Progress", 
+            value: overview.in_progress || "0", 
+            icon: FaEye, 
+            color: "text-blue-600" 
+          }
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching complaint stats:', error);
+      setError('Failed to load complaint statistics');
+    }
+  };
+
+  // Fetch recent complaints from API
+  const fetchRecentComplaints = async () => {
+    try {
+      const response = await complaintAPI.getComplaints({ limit: 5 });
+      if (response.success) {
+        const formattedComplaints = response.data.map(complaint => ({
+          id: complaint.complaint_id,
+          category: formatCategory(complaint.category),
+          status: formatStatus(complaint.status),
+          date: new Date(complaint.created_at).toLocaleDateString()
+        }));
+        setRecentComplaints(formattedComplaints);
+      }
+    } catch (error) {
+      console.error('Error fetching recent complaints:', error);
+      setError('Failed to load recent complaints');
+    }
+  };
+
+  // Helper function to format category names
+  const formatCategory = (category) => {
+    const categoryMap = {
+      'road_infrastructure': 'Road & Infrastructure',
+      'waste_management': 'Waste Management',
+      'water_supply': 'Water Supply',
+      'electricity': 'Electricity',
+      'public_safety': 'Public Safety',
+      'healthcare': 'Healthcare',
+      'education': 'Education',
+      'other': 'Other'
+    };
+    return categoryMap[category] || category;
+  };
+
+  // Helper function to format status
+  const formatStatus = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'Pending';
+      case 'in-progress':
+        return 'In Progress';
+      case 'resolved':
+        return 'Resolved';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return status;
+    }
+  };
+
+  // Load dashboard data
+  const loadDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await Promise.all([fetchComplaintStats(), fetchRecentComplaints()]);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initialize Tawk.to chat bot and load dashboard data
   useEffect(() => {
+    // Load dashboard data
+    loadDashboardData();
+
     // Check if Tawk.to script is already loaded to avoid duplicates
     if (!window.Tawk_API) {
       // Initialize Tawk.to variables
@@ -101,6 +207,31 @@ function Dashboard({ setCurrentPage }) {
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Error loading dashboard data</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
+              </div>
+              <div className="ml-auto">
+                <button
+                  onClick={loadDashboardData}
+                  className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-md text-sm transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
           {stats.map(({ label, value, icon: Icon, color }, i) => (
@@ -110,10 +241,15 @@ function Dashboard({ setCurrentPage }) {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
+                  <h3 className="text-2xl font-bold text-gray-900 flex items-center">
+                    {loading ? (
+                      <FaSpinner className="animate-spin text-gray-400 mr-2" />
+                    ) : null}
+                    {value}
+                  </h3>
                   <p className="text-gray-700 font-medium text-sm">{label}</p>
                 </div>
-                <Icon className={`${color} text-3xl`} />
+                <Icon className={`${color} text-3xl ${loading ? 'opacity-50' : ''}`} />
               </div>
             </div>
           ))}
@@ -122,35 +258,86 @@ function Dashboard({ setCurrentPage }) {
         {/* Recent Complaints */}
         <div className="bg-white rounded-lg shadow-md border border-gray-200">
           <div className="p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Complaints</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Recent Complaints</h2>
+              {loading && (
+                <FaSpinner className="animate-spin text-gray-400" />
+              )}
+            </div>
             <div className="divide-y divide-gray-200">
-              {recentComplaints.map(({ id, category, status, date }) => (
-                <div key={id} className="py-4 flex justify-between items-center">
-                  <div>
-                    <p className="font-medium text-gray-900">{id}</p>
-                    <p className="text-sm text-gray-700">{category}</p>
+              {loading ? (
+                // Loading skeleton
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="py-4 flex justify-between items-center animate-pulse">
+                    <div>
+                      <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-24"></div>
+                    </div>
+                    <div className="text-right">
+                      <div className="h-6 bg-gray-200 rounded-full w-20 mb-1"></div>
+                      <div className="h-3 bg-gray-200 rounded w-16"></div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${status === "Resolved"
-                        ? "bg-green-100 text-green-800"
-                        : status === "Pending"
-                          ? "bg-amber-100 text-amber-800"
-                          : "bg-blue-100 text-blue-800"
+                ))
+              ) : recentComplaints.length > 0 ? (
+                recentComplaints.map(({ id, category, status, date }) => (
+                  <div 
+                    key={id} 
+                    className="py-4 flex justify-between items-center hover:bg-gray-50 cursor-pointer transition-colors rounded-lg px-2"
+                    onClick={() => {
+                      localStorage.setItem("selectedComplaintId", id);
+                      setCurrentPage("track-status");
+                    }}
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">{id}</p>
+                      <p className="text-sm text-gray-700">{category}</p>
+                    </div>
+                    <div className="text-right">
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          status === "Resolved"
+                            ? "bg-green-100 text-green-800"
+                            : status === "Pending"
+                            ? "bg-amber-100 text-amber-800"
+                            : status === "In Progress"
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-gray-100 text-gray-800"
                         }`}
-                    >
-                      {status}
-                    </span>
-                    <p className="text-xs text-gray-600 mt-1">{date}</p>
+                      >
+                        {status}
+                      </span>
+                      <p className="text-xs text-gray-600 mt-1">{date}</p>
+                    </div>
                   </div>
+                ))
+              ) : (
+                // Empty state
+                <div className="py-8 text-center">
+                  <div className="text-gray-400 text-4xl mb-2">📝</div>
+                  <p className="text-gray-600 mb-2">No complaints yet</p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Your submitted complaints will appear here
+                  </p>
+                  <button
+                    onClick={() => setCurrentPage("file-complaint")}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm transition-colors"
+                  >
+                    File Your First Complaint
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
-            <div className="flex justify-end mt-6">
-              <button className="px-4 py-2 border border-green-300 text-gray-900 hover:bg-green-50 hover:border-green-400 rounded-md font-medium transition-colors">
-                View All
-              </button>
-            </div>
+            {recentComplaints.length > 0 && (
+              <div className="flex justify-end mt-6">
+                <button 
+                  onClick={() => setCurrentPage("track-status")}
+                  className="px-4 py-2 border border-green-300 text-gray-900 hover:bg-green-50 hover:border-green-400 rounded-md font-medium transition-colors"
+                >
+                  View All
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
