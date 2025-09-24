@@ -228,7 +228,7 @@ function Tracking() {
                 <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Enter Complaint ID (e.g., 12345)"
+                  placeholder="Enter Complaint ID (e.g., CMP-MFYCJPFJ-UCSN)"
                   className="pl-10 pr-3 py-3 w-full bg-white text-gray-900 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   value={complaintId}
                   onChange={(e) => setComplaintId(e.target.value)}
