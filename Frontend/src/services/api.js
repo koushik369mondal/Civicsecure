@@ -35,6 +35,75 @@ export const authAPI = {
         api.get('/user/profile')
 };
 
+// Complaint API functions
+export const complaintAPI = {
+    // Submit a new complaint
+    submitComplaint: async (complaintData) => {
+        try {
+            const response = await api.post('/complaints', complaintData);
+            return response.data;
+        } catch (error) {
+            console.error('Complaint submission error:', error);
+            throw error;
+        }
+    },
+
+    // Get all complaints with optional filtering
+    getComplaints: async (filters = {}) => {
+        try {
+            const queryParams = new URLSearchParams();
+            Object.keys(filters).forEach(key => {
+                if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
+                    queryParams.append(key, filters[key]);
+                }
+            });
+            
+            const url = `/complaints${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+            const response = await api.get(url);
+            return response.data;
+        } catch (error) {
+            console.error('Get complaints error:', error);
+            throw error;
+        }
+    },
+
+    // Get complaint by ID
+    getComplaintById: async (complaintId) => {
+        try {
+            const response = await api.get(`/complaints/${complaintId}`);
+            return response.data;
+        } catch (error) {
+            console.error('Get complaint by ID error:', error);
+            throw error;
+        }
+    },
+
+    // Get complaint statistics
+    getComplaintStats: async () => {
+        try {
+            const response = await api.get('/complaints/stats');
+            return response.data;
+        } catch (error) {
+            console.error('Get complaint stats error:', error);
+            throw error;
+        }
+    },
+
+    // Update complaint status (admin only)
+    updateComplaintStatus: async (complaintId, status, resolutionNotes = '') => {
+        try {
+            const response = await api.put(`/complaints/${complaintId}/status`, {
+                status,
+                resolution_notes: resolutionNotes
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Update complaint status error:', error);
+            throw error;
+        }
+    }
+};
+
 // Validate Aadhaar number against database
 export const validateAadhaar = async (aadhaarNumber) => {
   try {

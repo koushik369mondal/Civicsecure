@@ -3,6 +3,7 @@ import Layout from "./Layout";
 import AadhaarVerification from './AadhaarVerification';
 import SafeLocationPicker from './SafeLocationPicker'; // Use the safe version
 import ErrorBoundary from './ErrorBoundary';
+import { complaintAPI } from '../services/api';
 
 function ComplaintForm() {
   const [category, setCategory] = useState("");
@@ -57,29 +58,39 @@ function ComplaintForm() {
       return;
     }
 
-    // Prepare form data
-    const formData = {
+    // Prepare complaint data for backend
+    const complaintData = {
       category,
       description,
       location: {
-        address: location.address,
+        address: location.address || location.formatted,
         latitude: location.latitude,
-        longitude: location.longitude
+        longitude: location.longitude,
+        formatted: location.formatted || location.address
       },
       reporterType,
-      attachments: attachments.length,
-      aadhaarData: aadhaarVerified ? aadhaarData : null
+      aadhaarData: aadhaarVerified ? aadhaarData : null,
+      attachments: attachments.map(file => ({
+        name: file.name,
+        size: file.size,
+        type: file.type
+      }))
     };
 
-    console.log('Submitting complaint:', formData);
+    console.log('🚀 Submitting complaint to backend:', complaintData);
 
-    // Simulate uploading for 2 seconds
-    setUploading(true);
-    setTimeout(() => {
-      setUploading(false);
-      alert("Complaint submitted successfully!");
+    try {
+      setUploading(true);
+      
+      // Submit complaint to backend
+      const response = await complaintAPI.submitComplaint(complaintData);
+      
+      console.log('✅ Complaint submitted successfully:', response);
+      
+      // Show success message
+      alert(`Complaint submitted successfully!\nComplaint ID: ${response.data.complaintId}\nStatus: ${response.data.status}`);
 
-      // Clear form after submission
+      // Clear form after successful submission
       setCategory("");
       setDescription("");
       setLocation({
@@ -92,7 +103,17 @@ function ComplaintForm() {
       setAttachments([]);
       setAadhaarVerified(false);
       setAadhaarData(null);
-    }, 2000);
+      
+    } catch (error) {
+      console.error('❌ Error submitting complaint:', error);
+      
+      // Show error message
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to submit complaint';
+      alert(`Error: ${errorMessage}`);
+      
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (

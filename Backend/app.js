@@ -184,6 +184,12 @@ app.post("/api/test-body", (req, res) => {
 // MAIN API ROUTES  
 // ================================
 
+// Import routes
+const complaintRoutes = require('./routes/complaintRoutes');
+
+// Use routes
+app.use('/api/complaints', complaintRoutes);
+
 // Routes
 app.post("/api/send-otp", otpLimiter, async (req, res) => {
   const { phoneNumber } = req.body || {};

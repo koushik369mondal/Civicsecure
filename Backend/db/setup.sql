@@ -37,11 +37,40 @@ CREATE TABLE IF NOT EXISTS aadhaar_dataset (
     is_active BOOLEAN DEFAULT true
 );
 
+-- Create Complaints table
+CREATE TABLE IF NOT EXISTS complaints (
+    id SERIAL PRIMARY KEY,
+    complaint_id VARCHAR(20) UNIQUE NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    description TEXT NOT NULL,
+    location_address TEXT,
+    location_latitude DECIMAL(10, 8),
+    location_longitude DECIMAL(11, 8),
+    reporter_type VARCHAR(20) NOT NULL DEFAULT 'anonymous',
+    reporter_phone VARCHAR(15),
+    reporter_name VARCHAR(100),
+    aadhaar_number VARCHAR(12),
+    aadhaar_verified BOOLEAN DEFAULT false,
+    status VARCHAR(20) DEFAULT 'pending',
+    priority VARCHAR(10) DEFAULT 'medium',
+    assigned_to VARCHAR(100),
+    attachments JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TIMESTAMP,
+    resolution_notes TEXT
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
 CREATE INDEX IF NOT EXISTS idx_otp_codes_phone ON otp_codes(phone);
 CREATE INDEX IF NOT EXISTS idx_otp_codes_expires_at ON otp_codes(expires_at);
 CREATE INDEX IF NOT EXISTS idx_aadhaar_number ON aadhaar_dataset(aadhaar_number);
+CREATE INDEX IF NOT EXISTS idx_complaints_complaint_id ON complaints(complaint_id);
+CREATE INDEX IF NOT EXISTS idx_complaints_category ON complaints(category);
+CREATE INDEX IF NOT EXISTS idx_complaints_status ON complaints(status);
+CREATE INDEX IF NOT EXISTS idx_complaints_reporter_phone ON complaints(reporter_phone);
+CREATE INDEX IF NOT EXISTS idx_complaints_created_at ON complaints(created_at);
 
 -- Insert some sample data for testing (optional)
 -- You can comment this out if you don't want sample data
