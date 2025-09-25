@@ -31,6 +31,12 @@ function LocationPicker({ onLocationSelect, disabled = false }) {
     const [locationInfo, setLocationInfo] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    
+    // Search functionality state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showSearchResults, setShowSearchResults] = useState(false);
 
     // Fix: Use import.meta.env instead of process.env for Vite
     const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || import.meta.env.REACT_APP_MAPBOX_ACCESS_TOKEN;
@@ -201,6 +207,82 @@ function LocationPicker({ onLocationSelect, disabled = false }) {
         );
     };
 
+    // Search for locations using Mapbox Geocoding API
+    const searchLocation = async (query) => {
+        if (!query.trim() || disabled) return;
+
+        setIsSearching(true);
+        setError('');
+
+        try {
+            const response = await fetch(
+                `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&country=IN&limit=5`
+            );
+
+            if (!response.ok) {
+                throw new Error('Search failed');
+            }
+
+            const data = await response.json();
+            setSearchResults(data.features || []);
+            setShowSearchResults(true);
+
+        } catch (err) {
+            console.error('Search error:', err);
+            setError('Failed to search locations. Please try again.');
+            setSearchResults([]);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    // Handle search input change with debouncing
+    const handleSearchInput = (e) => {
+        const value = e.target.value;
+        setSearchQuery(value);
+
+        // Simple debouncing - search after user stops typing for 500ms
+        clearTimeout(window.searchTimeout);
+        window.searchTimeout = setTimeout(() => {
+            if (value.trim().length >= 3) {
+                searchLocation(value);
+            } else {
+                setSearchResults([]);
+                setShowSearchResults(false);
+            }
+        }, 500);
+    };
+
+    // Select a search result
+    const selectSearchResult = (feature) => {
+        const [longitude, latitude] = feature.center;
+        const address = feature.place_name;
+
+        setSelectedLocation({ longitude, latitude });
+        setLocationInfo(address);
+        setShowPopup(true);
+        setSearchQuery(address);
+        setShowSearchResults(false);
+
+        // Move map to selected location
+        setViewState(prev => ({
+            ...prev,
+            longitude,
+            latitude,
+            zoom: 15
+        }));
+
+        // Send location data to parent
+        const locationData = {
+            address: address,
+            latitude: latitude,
+            longitude: longitude,
+            formatted: address
+        };
+
+        onLocationSelect(locationData);
+    };
+
     if (!MAPBOX_TOKEN) {
         return (
             <div className="w-full h-96 bg-red-50 border border-red-200 rounded-lg flex items-center justify-center">
@@ -242,6 +324,76 @@ function LocationPicker({ onLocationSelect, disabled = false }) {
                         </>
                     )}
                 </button>
+            </div>
+
+            {/* Search Location Input */}
+            <div className="relative">
+                <div className="flex items-center space-x-2">
+                    <div className="relative flex-1">
+                        <input
+                            type="text"
+                            placeholder="🔍 Search for any location (e.g., MG Road, Bangalore)"
+                            value={searchQuery}
+                            onChange={handleSearchInput}
+                            disabled={disabled || isSearching}
+                            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                        />
+                        {isSearching && (
+                            <div className="absolute right-3 top-2.5">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            </div>
+                        )}
+                    </div>
+                    {searchQuery && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSearchQuery('');
+                                setSearchResults([]);
+                                setShowSearchResults(false);
+                            }}
+                            className="px-3 py-2 text-gray-500 hover:text-gray-700 text-sm"
+                            title="Clear search"
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
+
+                {/* Search Results Dropdown */}
+                {showSearchResults && searchResults.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                        {searchResults.map((result, index) => (
+                            <button
+                                key={index}
+                                type="button"
+                                onClick={() => selectSearchResult(result)}
+                                className="w-full px-4 py-2 text-left hover:bg-gray-100 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-100"
+                            >
+                                <div className="flex items-start space-x-2">
+                                    <span className="text-blue-600 mt-0.5">📍</span>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate">
+                                            {result.text}
+                                        </p>
+                                        <p className="text-xs text-gray-500 truncate">
+                                            {result.place_name}
+                                        </p>
+                                    </div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {/* No Results Message */}
+                {showSearchResults && searchResults.length === 0 && !isSearching && searchQuery.length >= 3 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg p-4">
+                        <p className="text-sm text-gray-500 text-center">
+                            No locations found for "{searchQuery}"
+                        </p>
+                    </div>
+                )}
             </div>
 
             {/* Error Message */}
