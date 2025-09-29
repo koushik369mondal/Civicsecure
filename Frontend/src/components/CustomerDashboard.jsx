@@ -106,14 +106,13 @@ export default function CustomerDashboard({
           <div className="bg-green-800 rounded-xl shadow-lg p-8">
             <div className="flex items-center justify-between">
               <div>
-                {/* White text for welcome message */}
                 <h1 className="text-3xl font-bold mb-2" style={{ color: '#ffffff' }}>Welcome back, {user.name}! 🏠</h1>
                 <p style={{ color: '#ffffff' }}>Let's make your community better together</p>
               </div>
               <div className="hidden md:block">
-                <div className="flex items-center space-x-2 bg-white bg-opacity-20 rounded-lg p-3">
+                <div className="flex items-center space-x-2 bg-white bg-opacity-60 rounded-lg p-3">
                   <FaBell className="text-yellow-300 animate-pulse" />
-                  <span className="text-sm" style={{ color: '#ffffff' }}>2 updates available</span>
+                  <span className="text-sm" style={{ color: '#000000' }}>2 updates available</span>
                 </div>
               </div>
             </div>
@@ -147,7 +146,6 @@ export default function CustomerDashboard({
                   className={`${color} p-6 rounded-xl shadow-lg transform hover:scale-105 transition-all duration-200 text-left`}
                 >
                   <Icon className="text-3xl mb-4" style={{ color: '#ffffff' }} />
-                  {/* White text for button labels */}
                   <h4 className="font-semibold text-lg mb-2" style={{ color: '#ffffff' }}>{label}</h4>
                   <p className="text-sm opacity-90" style={{ color: '#ffffff' }}>{description}</p>
                 </button>
@@ -200,7 +198,6 @@ export default function CustomerDashboard({
         </div>
       )}
 
-      {/* Rest of the component remains the same for other pages */}
       {currentPage === "file-complaint" && (
         <div className="p-6 max-w-3xl mx-auto">
           <div className="bg-white shadow rounded-lg p-6">
