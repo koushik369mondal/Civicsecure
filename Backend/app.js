@@ -6,12 +6,17 @@ const helmet = require("helmet");
 const { Pool } = require("pg");
 require("dotenv").config();
 
+// Import route modules
+const complaintRoutes = require('./routes/complaintRoutes');
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+
 const app = express();
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  origin: process.env.FRONTEND_URL || "http://localhost:5174",
   credentials: true
 }));
 
@@ -87,6 +92,11 @@ const generalLimiter = rateLimit({
 
 // Apply general rate limiting to all routes
 app.use(generalLimiter);
+
+// Route registrations
+app.use('/api/complaints', complaintRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 // Generate 6-digit OTP
 const generateOTP = () => {
@@ -499,18 +509,36 @@ app.put("/api/user/profile", authenticateToken, async (req, res) => {
 });
 
 // ================================
-// COMPLAINT ROUTES
+// COMPLAINT ROUTES  
 // ================================
 
-// Create complaint (requires authentication)
-app.post("/api/complaints", authenticateToken, async (req, res) => {
-  const { category, description, location, attachments = [], priority = 'medium' } = req.body;
+// Create anonymous complaint (no authentication required)
+app.post("/api/complaints/anonymous", async (req, res) => {
+  const { 
+    title,
+    category, 
+    description, 
+    location, 
+    attachments = [], 
+    priority = 'medium',
+    reporterType = 'anonymous',
+    contactMethod = 'email',
+    phone,
+    aadhaarData
+  } = req.body;
   
   // Validation
-  if (!category || !description || !location) {
+  if (!title || !category || !description) {
     return res.status(400).json({
       success: false,
-      message: 'Category, description, and location are required'
+      message: 'Title, category, and description are required'
+    });
+  }
+
+  if (!location || !location.latitude || !location.longitude) {
+    return res.status(400).json({
+      success: false,
+      message: 'Location with coordinates is required'
     });
   }
 
@@ -523,27 +551,155 @@ app.post("/api/complaints", authenticateToken, async (req, res) => {
   }
 
   try {
+    // Generate shorter complaint ID to fit varchar(20) constraint
+    const timestamp = Date.now().toString().slice(-8); // Last 8 digits of timestamp
+    const randomStr = Math.random().toString(36).substr(2, 4).toUpperCase(); // 4 char random
+    const complaintId = `CMP${timestamp}${randomStr}`; // Format: CMP + 8 digits + 4 letters = 15 chars
+    
+    console.log('Attempting to insert complaint with data:', {
+      complaintId: `${complaintId} (length: ${complaintId.length})`,
+      title: title?.trim(),
+      category: category?.trim(),
+      description: description?.trim(),
+      priority,
+      location
+    });
+    
     const result = await pool.query(
-      `INSERT INTO complaints (category, description, location, attachments, reporter_type, status, priority, user_id, reporter_phone, reporter_name, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW()) RETURNING *`,
+      `INSERT INTO complaints (
+        complaint_id, title, category, description, priority, status, 
+        reporter_type, contact_method, phone,
+        location_address, location_latitude, location_longitude, location_formatted,
+        user_id, department, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW()) 
+      RETURNING id, complaint_id, created_at`,
       [
+        complaintId,
+        title.trim(),
         category.trim(), 
         description.trim(), 
-        location.trim(), 
-        JSON.stringify(attachments), 
-        'authenticated',
-        'submitted',
         priority,
-        req.user.id,
-        req.user.phone,
-        req.user.name || 'User'
+        'submitted',
+        reporterType,
+        contactMethod,
+        phone,
+        location?.address || null,
+        location?.latitude || null,
+        location?.longitude || null,
+        location?.formatted || null,
+        null, // user_id is null for anonymous complaints
+        category // department based on category
+      ]
+    );
+    
+    console.log('Complaint inserted successfully:', result.rows[0]);
+    
+    res.status(201).json({ 
+      success: true,
+      message: 'Anonymous complaint submitted successfully',
+      data: {
+        complaintId: result.rows[0].complaint_id,
+        id: result.rows[0].id,
+        status: 'submitted',
+        createdAt: result.rows[0].created_at
+      }
+    });
+  } catch (error) {
+    console.error("Failed to create anonymous complaint:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint
+    });
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to create complaint",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Create complaint (requires authentication)
+app.post("/api/complaints", authenticateToken, async (req, res) => {
+  const { 
+    title,
+    category, 
+    description, 
+    location, 
+    attachments = [], 
+    priority = 'medium',
+    reporterType = 'anonymous',
+    contactMethod = 'email',
+    phone,
+    aadhaarData
+  } = req.body;
+  
+  // Validation
+  if (!title || !category || !description) {
+    return res.status(400).json({
+      success: false,
+      message: 'Title, category, and description are required'
+    });
+  }
+
+  if (!location || !location.latitude || !location.longitude) {
+    return res.status(400).json({
+      success: false,
+      message: 'Location with coordinates is required'
+    });
+  }
+
+  const validPriorities = ['low', 'medium', 'high', 'urgent'];
+  if (!validPriorities.includes(priority)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid priority level'
+    });
+  }
+
+  try {
+    // Generate shorter complaint ID to fit varchar(20) constraint
+    const timestamp = Date.now().toString().slice(-8); // Last 8 digits of timestamp
+    const randomStr = Math.random().toString(36).substr(2, 4).toUpperCase(); // 4 char random
+    const complaintId = `CMP${timestamp}${randomStr}`; // Format: CMP + 8 digits + 4 letters = 15 chars
+    
+    const result = await pool.query(
+      `INSERT INTO complaints (
+        complaint_id, title, category, description, priority, status, 
+        reporter_type, contact_method, phone,
+        location_address, location_latitude, location_longitude, location_formatted,
+        user_id, department, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW()) 
+      RETURNING id, complaint_id, created_at`,
+      [
+        complaintId,
+        title.trim(),
+        category.trim(), 
+        description.trim(), 
+        priority,
+        'submitted',
+        reporterType,
+        contactMethod,
+        phone,
+        location?.address || null,
+        location?.latitude || null,
+        location?.longitude || null,
+        location?.formatted || null,
+        req.user?.id || null,
+        category // Default department to category
       ]
     );
     
     res.status(201).json({ 
       success: true,
       message: 'Complaint submitted successfully',
-      complaint: result.rows[0] 
+      data: {
+        complaintId: result.rows[0].complaint_id,
+        id: result.rows[0].id,
+        status: 'submitted',
+        createdAt: result.rows[0].created_at
+      }
     });
   } catch (error) {
     console.error("Failed to create complaint:", error);

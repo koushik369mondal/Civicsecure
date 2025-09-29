@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { complaintAPI } from '../services/api';
 import {
   FaFileAlt,
   FaMapMarkerAlt,
@@ -17,21 +18,6 @@ import {
   FaUser,
   FaSearchLocation
 } from "react-icons/fa";
-
-// Optimized API service with reduced timeout
-const complaintAPI = {
-  submitComplaint: async (data) => {
-    // Reduced simulation time for better UX
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return {
-      data: {
-        complaintId: `CMP-${Date.now()}`,
-        status: 'submitted',
-        message: 'Complaint submitted successfully'
-      }
-    };
-  }
-};
 
 // Simplified Aadhaar Verification
 const AadhaarVerification = React.memo(({ onVerificationComplete }) => {
@@ -739,16 +725,42 @@ function ComplaintForm({ setCurrentPage }) {
     }
 
     try {
+      console.log('ComplaintForm - Submitting anonymous complaint...', {
+        formData: formData
+      });
+      
       const response = await complaintAPI.submitComplaint({
         ...formData,
         aadhaarData: aadhaarVerified ? aadhaarData : null,
-        attachments: attachments.map(f => ({ name: f.name, size: f.size, type: f.type }))
+        attachments: attachments.map(f => ({ 
+          name: f.name, 
+          size: f.size, 
+          type: f.type,
+          originalName: f.name,
+          filename: `${Date.now()}_${f.name}`,
+          fileType: f.type,
+          fileSize: f.size,
+          filePath: `/uploads/${Date.now()}_${f.name}`,
+          url: `/uploads/${Date.now()}_${f.name}`
+        }))
       });
 
-      setComplaintId(response.data.complaintId);
+      setComplaintId(response.data.data.complaintId);
       setIsSuccess(true);
     } catch (error) {
-      alert('Submission failed. Please try again.');
+      console.error('ComplaintForm - Submission failed:', {
+        status: error.response?.status,
+        message: error.response?.data?.message,
+        error: error.response?.data
+      });
+      
+      let errorMessage = 'Submission failed. Please try again.';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

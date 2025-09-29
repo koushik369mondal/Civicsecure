@@ -17,12 +17,13 @@ const Login = ({ onSwitchToRegister }) => {
         setMessage('');
 
         try {
-            const response = await authAPI.login(formData.phoneNumber);
+            const response = await authAPI.sendOTP('+91' + formData.phoneNumber);
             setMessage(response.data.message);
-            setMockOTP(response.data.mockOTP);
+            // In development mode, the OTP will be shown in console
+            console.log('Check console for OTP in development mode');
             setStep('otp');
         } catch (error) {
-            setMessage(error.response?.data?.message || 'Login failed');
+            setMessage(error.response?.data?.message || 'Failed to send OTP');
         } finally {
             setLoading(false);
         }
@@ -33,14 +34,15 @@ const Login = ({ onSwitchToRegister }) => {
         setLoading(true);
 
         try {
-            const response = await authAPI.verifyLoginOTP(formData.phoneNumber, formData.otp);
+            const response = await authAPI.verifyOTP('+91' + formData.phoneNumber, formData.otp);
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
             setMessage('Login successful! Redirecting...');
 
+            // Redirect to main app or reload page
             setTimeout(() => {
-                window.location.href = '/dashboard';
-            }, 2000);
+                window.location.reload();
+            }, 1500);
         } catch (error) {
             setMessage(error.response?.data?.message || 'OTP verification failed');
         } finally {
