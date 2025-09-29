@@ -12,12 +12,12 @@ import {
     FaSync
 } from "react-icons/fa";
 
-// Local images for the carousel - Handle import errors gracefully
+// Local images for the carousel - Handle import errors gracefully with ES6 imports
 let scheme1, scheme2, scheme3;
 try {
-    scheme1 = require("../assets/scheme1.png");
-    scheme2 = require("../assets/scheme2.png");
-    scheme3 = require("../assets/scheme3.png");
+    scheme1 = new URL("../assets/scheme1.png", import.meta.url).href;
+    scheme2 = new URL("../assets/scheme2.png", import.meta.url).href;
+    scheme3 = new URL("../assets/scheme3.png", import.meta.url).href;
 } catch (error) {
     console.warn("Scheme images not found, using placeholders");
     scheme1 = "https://via.placeholder.com/400x200/4F46E5/FFFFFF?text=🏠+PM+Awas+Yojana";
@@ -25,12 +25,12 @@ try {
     scheme3 = "https://via.placeholder.com/400x200/F59E0B/FFFFFF?text=🎓+Skill+India";
 }
 
-// PDF files for scheme details - Handle import errors gracefully
+// PDF files for scheme details - Handle import errors gracefully with ES6 imports
 let awasYojanaPdf, digitalIndiaPdf, skillMissionPdf;
 try {
-    awasYojanaPdf = require("../assets/awas-yojna.pdf");
-    digitalIndiaPdf = require("../assets/digital-india.pdf");
-    skillMissionPdf = require("../assets/skill-mission-india.pdf");
+    awasYojanaPdf = new URL("../assets/awas-yojna.pdf", import.meta.url).href;
+    digitalIndiaPdf = new URL("../assets/digital-india.pdf", import.meta.url).href;
+    skillMissionPdf = new URL("../assets/skill-mission-india.pdf", import.meta.url).href;
 } catch (error) {
     console.warn("PDF files not found, using placeholder links");
     awasYojanaPdf = "#";
