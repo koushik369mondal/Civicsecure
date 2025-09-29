@@ -9,6 +9,7 @@ import AadhaarVerification from "./components/AadhaarVerification";
 import Tracking from "./components/Tracking";
 import Chat from "./components/Chat";
 import InfoHub from "./components/InfoHub";
+import Community from "./components/Community";
 
 function App() {
   // Authentication State
@@ -133,14 +134,7 @@ function App() {
         return <InfoHub {...commonProps} />;
 
       case "community":
-        return (
-          <div className="max-w-4xl mx-auto p-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Community Hub</h2>
-              <p className="text-gray-600">Coming soon! Connect with your community members.</p>
-            </div>
-          </div>
-        );
+        return <Community {...commonProps} />;
 
       case "settings":
         return (
