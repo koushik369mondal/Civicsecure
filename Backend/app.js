@@ -93,6 +93,127 @@ const generalLimiter = rateLimit({
 // Apply general rate limiting to all routes
 app.use(generalLimiter);
 
+// Public tracking endpoints (must come before route registrations to avoid conflicts)
+// Public endpoint to track complaint by complaint ID (no authentication required)
+app.get("/api/track/:complaintId", async (req, res) => {
+  try {
+    const { complaintId } = req.params;
+    
+    const result = await pool.query(
+      `SELECT 
+        complaint_id,
+        title,
+        category,
+        description,
+        status,
+        priority,
+        created_at,
+        updated_at,
+        reporter_type
+       FROM complaints 
+       WHERE complaint_id = $1`,
+      [complaintId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Complaint not found with this ID"
+      });
+    }
+    
+    res.json({
+      success: true,
+      complaint: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Failed to track complaint:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to track complaint" 
+    });
+  }
+});
+
+// Public endpoint to get recent complaints (for tracking dashboard)
+app.get("/api/complaints/recent", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = parseInt(req.query.offset) || 0;
+    
+    const result = await pool.query(
+      `SELECT 
+        complaint_id,
+        title,
+        category,
+        status,
+        priority,
+        created_at,
+        reporter_type
+       FROM complaints 
+       ORDER BY created_at DESC 
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+    
+    res.json({
+      success: true,
+      complaints: result.rows,
+      count: result.rows.length
+    });
+  } catch (error) {
+    console.error("Failed to fetch recent complaints:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to fetch recent complaints" 
+    });
+  }
+});
+
+// Public endpoint to get complaint statistics
+app.get("/api/complaints/stats", async (req, res) => {
+  try {
+    const statsResult = await pool.query(
+      `SELECT 
+        COUNT(*) as total_complaints,
+        COUNT(CASE WHEN status = 'submitted' THEN 1 END) as pending,
+        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress,
+        COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved,
+        COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed
+       FROM complaints`
+    );
+    
+    const categoryResult = await pool.query(
+      `SELECT 
+        category,
+        COUNT(*) as count
+       FROM complaints 
+       GROUP BY category 
+       ORDER BY count DESC`
+    );
+    
+    res.json({
+      success: true,
+      stats: {
+        total: parseInt(statsResult.rows[0].total_complaints),
+        status: {
+          pending: parseInt(statsResult.rows[0].pending),
+          in_progress: parseInt(statsResult.rows[0].in_progress),
+          resolved: parseInt(statsResult.rows[0].resolved),
+          closed: parseInt(statsResult.rows[0].closed)
+        },
+        byCategory: categoryResult.rows
+      }
+    });
+  } catch (error) {
+    console.error("Failed to fetch complaint stats:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to fetch complaint statistics" 
+    });
+  }
+});
+
 // Route registrations
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/auth', authRoutes);
@@ -899,7 +1020,6 @@ app.use((err, req, res, next) => {
     ...(process.env.NODE_ENV === 'development' && { error: err.message })
   });
 });
-
 
 // 404 handler (alternative)
 app.use((req, res) => {

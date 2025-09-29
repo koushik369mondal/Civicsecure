@@ -89,7 +89,17 @@ export const complaintAPI = {
         api.get(`/complaints/${id}`),
 
     getUserComplaintStats: () =>
-        api.get('/complaints/stats/my')
+        api.get('/complaints/stats/my'),
+    
+    // Public tracking endpoints (no authentication required)
+    trackComplaint: (complaintId) =>
+        api.get(`/track/${complaintId}`),
+    
+    getRecentComplaints: (params = {}) =>
+        api.get('/complaints/recent', { params }),
+    
+    getComplaintStats: () =>
+        api.get('/complaints/stats')
 };
 
 export default api;
