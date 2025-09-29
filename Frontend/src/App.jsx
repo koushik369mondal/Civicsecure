@@ -8,6 +8,7 @@ import Profile from "./components/Profile";
 import AadhaarVerification from "./components/AadhaarVerification";
 import Tracking from "./components/Tracking";
 import Chat from "./components/Chat";
+import InfoHub from "./components/InfoHub";
 
 function App() {
   // Authentication State
@@ -127,6 +128,9 @@ function App() {
 
       case "chat":
         return <Chat {...commonProps} />;
+
+      case "info-hub":
+        return <InfoHub {...commonProps} />;
 
       case "community":
         return (

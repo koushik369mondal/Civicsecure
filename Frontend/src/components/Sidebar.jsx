@@ -1,15 +1,17 @@
 import React, { useMemo } from "react";
 import {
-  FaThLarge,        // Dashboard icon
+  FaHome,
   FaFileAlt,
-  FaSearch,
-  FaUser,
-  FaIdCard,
+  FaChartBar,
+  FaInfoCircle,
   FaComments,
+  FaIdCard,
+  FaUser,
+  FaSignOutAlt,
+  FaShieldAlt,
+  FaSearch,
   FaUsers,
   FaCog,
-  FaSignOutAlt,
-  FaShieldAlt
 } from "react-icons/fa";
 import ProfileAvatar from "./ProfileAvatar";
 
@@ -24,7 +26,7 @@ export default function Sidebar({
 
   const navigationItems = useMemo(() => {
     const adminItems = [
-      { id: "dashboard", label: "Dashboard", icon: FaThLarge },
+      { id: "dashboard", label: "Dashboard", icon: FaHome },
       { id: "track-status", label: "All Complaints", icon: FaSearch },
       { id: "community", label: "User Management", icon: FaUsers },
       { id: "profile", label: "Profile", icon: FaUser },
@@ -32,12 +34,13 @@ export default function Sidebar({
     ];
 
     const customerItems = [
-      { id: "dashboard", label: "Dashboard", icon: FaThLarge },
+      { id: "dashboard", label: "Dashboard", icon: FaHome },
       { id: "file-complaint", label: "File Complaint", icon: FaFileAlt },
       { id: "track-status", label: "Track Status", icon: FaSearch },
-      { id: "profile", label: "Profile", icon: FaUser },
+      { id: "info-hub", label: "Info Hub", icon: FaInfoCircle },
+      { id: "community", label: "Community", icon: FaUsers },
       { id: "aadhaar-verify", label: "Verify Aadhaar", icon: FaIdCard },
-      { id: "chat", label: "Support Chat", icon: FaComments },
+      { id: "profile", label: "Profile", icon: FaUser },
     ];
 
     return user?.role === "admin" ? adminItems : customerItems;
@@ -174,7 +177,10 @@ export default function Sidebar({
               return (
                 <li key={id}>
                   <button
-                    onClick={() => handleNavigation(id)}
+                    onClick={() => {
+                      if (setCurrentPage) setCurrentPage(id);
+                      if (sidebarOpen && setSidebarOpen) setSidebarOpen(false);
+                    }}
                     className={`flex items-center w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 group ${active
                         ? "bg-emerald-600 text-white shadow-md transform scale-105"
                         : "text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 hover:transform hover:scale-102"
