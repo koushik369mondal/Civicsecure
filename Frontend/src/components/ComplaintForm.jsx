@@ -1,163 +1,325 @@
 import React, { useState } from "react";
 import Layout from "./Layout";
+import { FaFileAlt, FaMapMarkerAlt, FaUser, FaPhone, FaEnvelope } from "react-icons/fa";
 
-function ComplaintForm() {
-  const [category, setCategory] = useState("");
-  const [description, setDescription] = useState("");
-  const [location, setLocation] = useState("");
-  const [reporterType, setReporterType] = useState("anonymous");
-  const [attachments, setAttachments] = useState([]);
-  const [uploading, setUploading] = useState(false);
+const ComplaintForm = ({ sidebarOpen, setSidebarOpen, user, onLogout, currentPage, setCurrentPage }) => {
+  const [formData, setFormData] = useState({
+    title: "",
+    category: "",
+    description: "",
+    location: "",
+    priority: "medium",
+    contactMethod: "email",
+    phone: "",
+  });
+  
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  // Simple local file selection handler; files stored but not uploaded yet
-  const handleAttachmentChange = (e) => {
-    const files = Array.from(e.target.files);
-    setAttachments(files);
+  const categories = [
+    "Roads & Infrastructure",
+    "Water Supply",
+    "Electricity",
+    "Sanitation & Waste",
+    "Public Safety",
+    "Traffic & Transportation",
+    "Environment",
+    "Health Services",
+    "Other"
+  ];
+
+  const priorities = [
+    { value: "low", label: "Low", color: "text-green-600" },
+    { value: "medium", label: "Medium", color: "text-yellow-600" },
+    { value: "high", label: "High", color: "text-red-600" },
+  ];
+
+  const handleInputChange = (field) => (e) => {
+    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
+    }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.title.trim()) newErrors.title = "Title is required";
+    if (!formData.category) newErrors.category = "Category is required";
+    if (!formData.description.trim()) newErrors.description = "Description is required";
+    if (!formData.location.trim()) newErrors.location = "Location is required";
+    if (formData.contactMethod === "phone" && !formData.phone.trim()) {
+      newErrors.phone = "Phone number is required when phone contact is selected";
+    }
 
-    // Simulate uploading for 2 seconds (disable submit while uploading)
-    setUploading(true);
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+    
+    setIsSubmitting(true);
+    
+    // Simulate API call
     setTimeout(() => {
-      setUploading(false);
-      alert("Complaint submitted (simulated)!");
-      
-      // Clear form after submission
-      setCategory("");
-      setDescription("");
-      setLocation("");
-      setReporterType("anonymous");
-      setAttachments([]);
+      setIsSubmitting(false);
+      setIsSuccess(true);
+      // Reset form after success
+      setTimeout(() => {
+        setFormData({
+          title: "",
+          category: "",
+          description: "",
+          location: "",
+          priority: "medium",
+          contactMethod: "email",
+          phone: "",
+        });
+        setIsSuccess(false);
+      }, 3000);
     }, 2000);
   };
 
+  if (isSuccess) {
+    return (
+      <Layout
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        user={user}
+        onLogout={onLogout}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+      >
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white shadow rounded-lg p-8 text-center">
+            <div className="mb-4">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Complaint Submitted Successfully!</h2>
+            <p className="text-gray-600 mb-4">
+              Your complaint has been registered. You will receive a complaint ID shortly.
+            </p>
+            <p className="text-sm text-gray-500">
+              Complaint ID: <span className="font-mono font-bold">CMP-{Math.floor(Math.random() * 10000)}</span>
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
-    <Layout>
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            Submit a Complaint
-          </h2>
+    <Layout
+      sidebarOpen={sidebarOpen}
+      setSidebarOpen={setSidebarOpen}
+      user={user}
+      onLogout={onLogout}
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+    >
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="bg-white shadow rounded-lg p-6 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">File a Complaint</h2>
+          <p className="text-gray-600">Help us serve you better by reporting issues in your area</p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="w-full">
-              <label className="block mb-2">
-                <span className="text-sm font-medium text-gray-900">
-                  Category
-                </span>
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                required
-                disabled={uploading}
-              >
-                <option value="" disabled>
-                  Select category
-                </option>
-                <option value="plot">Plot Issue</option>
-                <option value="road">Road Issue</option>
-                <option value="plumbing">Plumbing</option>
-                <option value="electricity">Electricity</option>
-                <option value="water">Water Supply</option>
-                <option value="garbage">Garbage</option>
-                <option value="noise">Noise</option>
-                <option value="others">Others</option>
-              </select>
-            </div>
-
-            <div className="w-full">
-              <label className="block mb-2">
-                <span className="text-sm font-medium text-gray-900">
-                  Description
-                </span>
-              </label>
-              <textarea
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 min-h-[120px]"
-                placeholder="Describe your complaint in detail..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-                disabled={uploading}
-              />
-            </div>
-
-            <div className="w-full">
-              <label className="block mb-2">
-                <span className="text-sm font-medium text-gray-900">
-                  Location
-                </span>
+        {/* Form */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FaFileAlt className="inline mr-2" />
+                Complaint Title *
               </label>
               <input
                 type="text"
-                placeholder="Enter address or GPS coordinates"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                required
-                disabled={uploading}
+                className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                  errors.title ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="Brief description of the issue"
+                value={formData.title}
+                onChange={handleInputChange("title")}
               />
+              {errors.title && <p className="text-red-600 text-sm mt-1">{errors.title}</p>}
             </div>
 
-            <div className="w-full">
-              <label className="block mb-2">
-                <span className="text-sm font-medium text-gray-900">
-                  Reporter Type
-                </span>
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900"
-                value={reporterType}
-                onChange={(e) => setReporterType(e.target.value)}
-                required
-                disabled={uploading}
-              >
-                <option value="anonymous">Anonymous</option>
-                <option value="pseudonymous">Pseudonymous</option>
-                <option value="verified">Verified (Aadhaar)</option>
-              </select>
+            {/* Category and Priority */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category *
+                </label>
+                <select
+                  className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                    errors.category ? "border-red-500" : "border-gray-300"
+                  }`}
+                  value={formData.category}
+                  onChange={handleInputChange("category")}
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+                {errors.category && <p className="text-red-600 text-sm mt-1">{errors.category}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Priority Level
+                </label>
+                <select
+                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  value={formData.priority}
+                  onChange={handleInputChange("priority")}
+                >
+                  {priorities.map(({ value, label, color }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="w-full">
-              <label className="block mb-2">
-                <span className="text-sm font-medium text-gray-900">
-                  Attachments
-                </span>
+            {/* Location */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                <FaMapMarkerAlt className="inline mr-2" />
+                Location *
               </label>
               <input
-                type="file"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-                multiple
-                onChange={handleAttachmentChange}
-                disabled={uploading}
+                type="text"
+                className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                  errors.location ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="Specific location or address"
+                value={formData.location}
+                onChange={handleInputChange("location")}
               />
-              {uploading && (
-                <p className="text-sm text-gray-600 mt-2">Uploading...</p>
-              )}
-              {attachments.length > 0 && !uploading && (
-                <p className="text-sm text-gray-600 mt-2">
-                  {attachments.length} file(s) selected
-                </p>
+              {errors.location && <p className="text-red-600 text-sm mt-1">{errors.location}</p>}
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Detailed Description *
+              </label>
+              <textarea
+                className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                  errors.description ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="Please provide detailed information about the issue..."
+                value={formData.description}
+                onChange={handleInputChange("description")}
+                rows={5}
+              />
+              {errors.description && <p className="text-red-600 text-sm mt-1">{errors.description}</p>}
+            </div>
+
+            {/* Contact Method */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Preferred Contact Method
+                </label>
+                <select
+                  className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  value={formData.contactMethod}
+                  onChange={handleInputChange("contactMethod")}
+                >
+                  <option value="email">Email</option>
+                  <option value="phone">Phone</option>
+                  <option value="both">Both</option>
+                </select>
+              </div>
+
+              {(formData.contactMethod === "phone" || formData.contactMethod === "both") && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <FaPhone className="inline mr-2" />
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                      errors.phone ? "border-red-500" : "border-gray-300"
+                    }`}
+                    placeholder="Your phone number"
+                    value={formData.phone}
+                    onChange={handleInputChange("phone")}
+                  />
+                  {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
+                </div>
               )}
             </div>
 
-            <div className="flex justify-end pt-4">
+            {/* Submit Button */}
+            <div className="flex justify-end space-x-4">
+              <button
+                type="button"
+                className="px-6 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition"
+                onClick={() => {
+                  setFormData({
+                    title: "",
+                    category: "",
+                    description: "",
+                    location: "",
+                    priority: "medium",
+                    contactMethod: "email",
+                    phone: "",
+                  });
+                  setErrors({});
+                }}
+              >
+                Reset
+              </button>
               <button
                 type="submit"
-                disabled={uploading}
-                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-md font-semibold transition-colors w-full sm:w-auto"
+                disabled={isSubmitting}
+                className="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-md font-medium transition disabled:bg-gray-400"
               >
-                Submit Complaint
+                {isSubmitting ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Submitting...
+                  </span>
+                ) : (
+                  "Submit Complaint"
+                )}
               </button>
             </div>
           </form>
         </div>
+
+        {/* Help Section */}
+        <div className="bg-white shadow rounded-lg p-6 border-l-4 border-blue-500">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Need Help?</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+            <div>
+              <p className="font-medium text-gray-900 mb-1">Emergency Issues</p>
+              <p>For urgent matters, call our 24/7 helpline: <span className="font-mono">1800-XXX-XXXX</span></p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-900 mb-1">Response Time</p>
+              <p>We typically respond within 24-48 hours depending on the issue priority.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </Layout>
   );
-}
+};
 
 export default ComplaintForm;
