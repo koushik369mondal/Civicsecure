@@ -1,27 +1,27 @@
 import React, { useMemo } from "react";
-import { 
+import {
   FaThLarge,        // Dashboard icon
-  FaFileAlt, 
-  FaSearch, 
-  FaUser, 
-  FaIdCard, 
-  FaComments, 
-  FaUsers, 
-  FaCog, 
+  FaFileAlt,
+  FaSearch,
+  FaUser,
+  FaIdCard,
+  FaComments,
+  FaUsers,
+  FaCog,
   FaSignOutAlt,
   FaShieldAlt
 } from "react-icons/fa";
 import ProfileAvatar from "./ProfileAvatar";
 
-export default function Sidebar({ 
-  user, 
-  onLogout, 
-  currentPage, 
-  setCurrentPage, 
-  sidebarOpen, 
-  setSidebarOpen 
+export default function Sidebar({
+  user,
+  onLogout,
+  currentPage,
+  setCurrentPage,
+  sidebarOpen,
+  setSidebarOpen
 }) {
-  
+
   const navigationItems = useMemo(() => {
     const adminItems = [
       { id: "dashboard", label: "Dashboard", icon: FaThLarge },
@@ -43,6 +43,7 @@ export default function Sidebar({
     return user?.role === "admin" ? adminItems : customerItems;
   }, [user?.role]);
 
+  // Fixed: Using the correct variable name
   const handleNavigation = (pageId) => {
     setCurrentPage(pageId);
     setSidebarOpen(false); // Close sidebar on mobile after selection
@@ -64,7 +65,7 @@ export default function Sidebar({
     try {
       const keysToRemove = [
         "userProfile",
-        "aadhaarVerification", 
+        "aadhaarVerification",
         "complaintDraft",
         "userPreferences",
         "sessionData",
@@ -96,13 +97,13 @@ export default function Sidebar({
     if (roleLower === "customer") {
       return "Customer";
     }
+    return "User"; // Default fallback
   };
 
   return (
     <aside
-      className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ease-in-out duration-300 bg-white border-r border-gray-200 flex flex-col ${
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      } lg:translate-x-0`}
+      className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ease-in-out duration-300 bg-white border-r border-gray-200 flex flex-col ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:translate-x-0`}
       aria-label="Sidebar navigation"
     >
       {/* Header - Enhanced Responsive */}
@@ -162,31 +163,29 @@ export default function Sidebar({
             <FaUser className="text-gray-400 group-hover:text-emerald-600 transition-colors" />
           </button>
         </div>
-      </div>
+      )}
 
-      {/* Navigation Menu - Enhanced */}
+      {/* Navigation Menu - FIXED */}
       <div className="flex-1 px-3 sm:px-4 py-4 sm:py-6 overflow-y-auto">
         <nav>
           <ul className="space-y-2 sm:space-y-3">
-            {menuItems.map(({ id, label, icon: Icon }) => {
+            {navigationItems.map(({ id, label, icon: Icon }) => {
               const active = currentPage === id;
               return (
                 <li key={id}>
                   <button
-                    onClick={() => handleMenuClick(id)}
-                    className={`flex items-center w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 group ${
-                      active
+                    onClick={() => handleNavigation(id)}
+                    className={`flex items-center w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 group ${active
                         ? "bg-emerald-600 text-white shadow-md transform scale-105"
                         : "text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 hover:transform hover:scale-102"
-                    }`}
+                      }`}
                     aria-current={active ? "page" : undefined}
                   >
                     <Icon
-                      className={`text-base sm:text-lg mr-3 sm:mr-4 transition-colors duration-200 flex-shrink-0 ${
-                        active
+                      className={`text-base sm:text-lg mr-3 sm:mr-4 transition-colors duration-200 flex-shrink-0 ${active
                           ? "text-white"
                           : "text-gray-600 group-hover:text-emerald-600"
-                      }`}
+                        }`}
                     />
                     <span className="text-sm font-medium truncate">{label}</span>
                     {active && (
@@ -217,6 +216,6 @@ export default function Sidebar({
           <p className="text-xs text-gray-400">© 2025 CivicSecure</p>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }
