@@ -15,30 +15,30 @@ import {
 
 // Import utility functions directly
 import { validateAadhaarNumber } from '../utils/verhoeff';
-import { 
-  generateSecureOTP, 
-  validateOTP, 
-  validatePhoneNumber, 
-  maskPhoneNumber, 
+import {
+  generateSecureOTP,
+  validateOTP,
+  validatePhoneNumber,
+  maskPhoneNumber,
   formatTime,
   OTP_TIMER_DURATION,
   RESEND_COOLDOWN,
-  isDev 
+  isDev
 } from '../utils/otp';
-import { 
-  validateAadhaarComplete, 
-  maskAadhaar 
+import {
+  validateAadhaarComplete,
+  maskAadhaar
 } from '../utils/aadhaar';
 
 // Constants
 const VERIFICATION_STORAGE_KEY = 'aadhaarVerification';
 const VERIFICATION_DURATION = 10 * 60 * 1000; // 10 minutes
 
-// Image validation constants [web:87][web:90][web:93]
+// Image validation constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
-// Image Upload Component [web:81][web:86][web:89]
+// Fixed Image Upload Component [web:122][web:125]
 const ImageUploadField = ({
   id,
   label,
@@ -53,12 +53,10 @@ const ImageUploadField = ({
   const fileInputRef = useRef(null);
 
   const validateFile = (file) => {
-    // Check file type [web:90][web:93]
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       return 'Please select a valid image file (JPG, PNG, WEBP)';
     }
 
-    // Check file size [web:87][web:90]
     if (file.size > MAX_FILE_SIZE) {
       return 'File size must be less than 5MB';
     }
@@ -73,7 +71,6 @@ const ImageUploadField = ({
       return;
     }
 
-    // Create preview [web:81][web:82]
     const reader = new FileReader();
     reader.onload = (e) => {
       onFileSelect(file, null, e.target.result);
@@ -90,16 +87,19 @@ const ImageUploadField = ({
 
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation(); // [web:122][web:125]
     setIsDragging(true);
   }, []);
 
   const handleDragLeave = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation(); // [web:122][web:125]
     setIsDragging(false);
   }, []);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation(); // [web:122][web:125]
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
@@ -108,16 +108,37 @@ const ImageUploadField = ({
     }
   }, []);
 
-  const handleRemove = () => {
+  const handleRemove = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation(); // [web:122][web:125]
+
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
     onRemove();
-  };
+  }, [onRemove]);
 
-  const handleClick = () => {
+  // Fixed: Separate click handlers to prevent double triggering [web:122][web:125]
+  const handleUploadAreaClick = useCallback((e) => {
+    // Only trigger if clicked directly on the upload area, not on child elements
+    if (e.target === e.currentTarget) {
+      e.preventDefault();
+      e.stopPropagation();
+      fileInputRef.current?.click();
+    }
+  }, []);
+
+  const handleChooseFileClick = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation(); // [web:122][web:125]
     fileInputRef.current?.click();
-  };
+  }, []);
+
+  const handleReplaceClick = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation(); // [web:122][web:125]
+    fileInputRef.current?.click();
+  }, []);
 
   return (
     <div className="space-y-3">
@@ -148,9 +169,9 @@ const ImageUploadField = ({
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={handleClick}
+          onClick={handleUploadAreaClick} // Fixed: Only trigger on direct click [web:122]
         >
-          <div className="space-y-3">
+          <div className="space-y-3 pointer-events-none"> {/* Prevent child clicks from bubbling */}
             <div className="flex justify-center">
               <FaUpload className={`text-3xl ${error ? 'text-red-400' : 'text-gray-400'
                 }`} />
@@ -166,8 +187,8 @@ const ImageUploadField = ({
             <div className="flex items-center justify-center space-x-4">
               <button
                 type="button"
-                onClick={handleClick}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                onClick={handleChooseFileClick} // Fixed: Separate handler [web:122]
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 pointer-events-auto" // Re-enable pointer events for button
               >
                 <FaImage className="mr-2" />
                 Choose File
@@ -188,7 +209,7 @@ const ImageUploadField = ({
           <div className="absolute top-2 right-2 space-x-2">
             <button
               type="button"
-              onClick={handleClick}
+              onClick={handleReplaceClick} // Fixed: Separate handler [web:122]
               className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-sm transition-colors"
               title="Replace image"
             >
@@ -196,7 +217,7 @@ const ImageUploadField = ({
             </button>
             <button
               type="button"
-              onClick={handleRemove}
+              onClick={handleRemove} // Fixed: Already has stopPropagation [web:122]
               className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-sm transition-colors"
               title="Remove image"
             >
@@ -304,7 +325,7 @@ const useFormValidation = () => {
   return { errors, validateField, clearError, clearAllErrors, hasErrors };
 };
 
-// Image upload hook [web:81][web:87]
+// Image upload hook
 const useImageUpload = () => {
   const [images, setImages] = useState({
     front: { file: null, preview: null, error: null },
@@ -519,7 +540,7 @@ const SimpleVerification = ({
   );
 };
 
-// Full Mode Component with Image Upload [web:81][web:86][web:89]
+// Full Mode Component with Image Upload (rest of the component remains the same)
 const FullVerification = ({
   initialAadhaar = '',
   initialPhone = '',
@@ -594,7 +615,7 @@ const FullVerification = ({
         return;
       }
 
-      // Validate images [web:87][web:93]
+      // Validate images
       if (!hasValidImages) {
         validateField('images', '', () => ({
           isValid: false,
@@ -781,7 +802,7 @@ const FullVerification = ({
               )}
             </div>
 
-            {/* Image Upload Section - NEW */}
+            {/* Image Upload Section - Fixed */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Front Side Image Upload */}
               <ImageUploadField
@@ -847,6 +868,7 @@ const FullVerification = ({
         </div>
       )}
 
+      {/* Rest of the component steps remain the same... */}
       {/* OTP Step */}
       {step === 'otp' && (
         <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
