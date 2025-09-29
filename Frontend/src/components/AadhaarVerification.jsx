@@ -13,92 +13,26 @@ import {
   FaCamera
 } from 'react-icons/fa';
 
-// Import utility functions with error handling
-const importUtility = (importFn, fallback) => {
-  try {
-    return importFn();
-  } catch (error) {
-    console.warn('Utility import failed, using fallback:', error);
-    return fallback;
-  }
-};
-
-// Fallback functions if imports fail
-const fallbackValidateAadhaar = (number) => ({
-  isValid: number && number.length === 12 && /^\d{12}$/.test(number),
-  error: number?.length !== 12 ? 'Aadhaar must be 12 digits' : null
-});
-
-const fallbackValidatePhone = (number) => ({
-  isValid: number && number.length === 10 && /^[6-9]\d{9}$/.test(number),
-  error: number?.length !== 10 ? 'Phone must be 10 digits' : null
-});
-
-// Import utilities with fallbacks
-const validateAadhaarNumber = importUtility(
-  () => require('../utils/verhoeff').validateAadhaarNumber,
-  fallbackValidateAadhaar
-);
-
-const validatePhoneNumber = importUtility(
-  () => require('../utils/otp').validatePhoneNumber,
-  fallbackValidatePhone
-);
-
-const generateSecureOTP = importUtility(
-  () => require('../utils/otp').generateSecureOTP,
-  () => Math.floor(100000 + Math.random() * 900000).toString()
-);
-
-const maskPhoneNumber = importUtility(
-  () => require('../utils/otp').maskPhoneNumber,
-  (phone) => phone ? `******${phone.slice(-4)}` : ''
-);
-
-const formatTime = importUtility(
-  () => require('../utils/otp').formatTime,
-  (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }
-);
-
-const formatAadhaar = importUtility(
-  () => require('../utils/aadhaar').formatAadhaar,
-  (aadhaar) => aadhaar ? aadhaar.replace(/(\d{4})(\d{4})(\d{4})/, '$1 $2 $3') : ''
-);
-
-const maskAadhaar = importUtility(
-  () => require('../utils/aadhaar').maskAadhaar,
-  (aadhaar) => aadhaar ? `XXXX XXXX ${aadhaar.slice(-4)}` : ''
-);
-
-const validateAadhaarComplete = importUtility(
-  () => require('../utils/aadhaar').validateAadhaarComplete,
-  async (aadhaar) => {
-    // Simulate validation
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const isValid = fallbackValidateAadhaar(aadhaar).isValid;
-    return {
-      isValid,
-      data: isValid ? {
-        name: 'Demo User',
-        gender: 'M',
-        state: 'Assam',
-        district: 'Kamrup Metro'
-      } : null,
-      error: isValid ? null : 'Invalid Aadhaar number'
-    };
-  }
-);
+// Import utility functions directly
+import { validateAadhaarNumber } from '../utils/verhoeff';
+import { 
+  generateSecureOTP, 
+  validateOTP, 
+  validatePhoneNumber, 
+  maskPhoneNumber, 
+  formatTime,
+  OTP_TIMER_DURATION,
+  RESEND_COOLDOWN,
+  isDev 
+} from '../utils/otp';
+import { 
+  validateAadhaarComplete, 
+  maskAadhaar 
+} from '../utils/aadhaar';
 
 // Constants
 const VERIFICATION_STORAGE_KEY = 'aadhaarVerification';
 const VERIFICATION_DURATION = 10 * 60 * 1000; // 10 minutes
-const OTP_TIMER_DURATION = 180; // 3 minutes
-const RESEND_COOLDOWN = 30; // 30 seconds
-const isDev = process.env.NODE_ENV === 'development';
 
 // Image validation constants [web:87][web:90][web:93]
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
