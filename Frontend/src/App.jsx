@@ -8,130 +8,203 @@ import Profile from "./components/Profile";
 import AadhaarVerification from "./components/AadhaarVerification";
 import Tracking from "./components/Tracking";
 import Chat from "./components/Chat";
-import { FaSpinner } from "react-icons/fa";
 
 function App() {
-  // Auth state
+  // Authentication State
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-
-  // App state
+  
+  // Application State
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
+  // Initialize app and check authentication
   useEffect(() => {
-    // Simulate auth check/load
-    const checkAuth = async () => {
+    const initializeApp = async () => {
       try {
-        // Simulate API call to check existing session
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        // Check localStorage for saved session
-        const savedUser = localStorage.getItem('civicSecureUser');
+        // Simulate authentication check
+        const savedUser = localStorage.getItem("civicSecureUser");
         if (savedUser) {
-          setUser(JSON.parse(savedUser));
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
         }
+        
+        // Simulate loading time
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
       } catch (error) {
-        console.error("Auth check failed:", error);
+        console.error("Failed to initialize app:", error);
       } finally {
         setAuthLoading(false);
       }
     };
 
-    checkAuth();
+    initializeApp();
   }, []);
 
-  // Callback for successful login
-  const handleLoginSuccess = (userObj) => {
-    setUser(userObj);
+  // Handle successful login
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
     setCurrentPage("dashboard");
-    // Save to localStorage for persistence
-    localStorage.setItem('civicSecureUser', JSON.stringify(userObj));
+    localStorage.setItem("civicSecureUser", JSON.stringify(userData));
+    
+    // Welcome notification
+    setNotifications(prev => [...prev, {
+      id: Date.now(),
+      message: `Welcome back, ${userData.name}!`,
+      type: "success"
+    }]);
   };
 
+  // Handle user logout
   const handleLogout = () => {
     setUser(null);
     setCurrentPage("dashboard");
     setSidebarOpen(false);
-    // Clear localStorage
-    localStorage.removeItem('civicSecureUser');
+    localStorage.removeItem("civicSecureUser");
+    
+    // Clear any notifications
+    setNotifications([]);
   };
 
-  // Route content based on currentPage and user role
+  // Navigate between pages
+  const navigateToPage = (page) => {
+    setCurrentPage(page);
+    setSidebarOpen(false); // Close sidebar on mobile after navigation
+  };
+
+  // Update user data (for real-time profile updates)
+  const updateUser = (updatedData) => {
+    const updatedUser = { ...user, ...updatedData };
+    setUser(updatedUser);
+    localStorage.setItem("civicSecureUser", JSON.stringify(updatedUser));
+  };
+
+  // Common props passed to all page components
+  const getCommonProps = () => ({
+    user,
+    updateUser,
+    currentPage,
+    sidebarOpen,
+    setSidebarOpen,
+    onLogout: handleLogout,
+    setCurrentPage: navigateToPage,
+    notifications,
+    setNotifications
+  });
+
+  // Centralized page content rendering
   const renderPageContent = () => {
     if (!user) {
       return <Login onLoginSuccess={handleLoginSuccess} />;
     }
 
-    const commonProps = {
-      user,
-      currentPage,
-      sidebarOpen,
-      setSidebarOpen,
-      onLogout: handleLogout,
-      setCurrentPage,
-    };
+    const commonProps = getCommonProps();
+
+    // Debug log to check current page
+    console.log("Current page:", currentPage, "User role:", user.role);
 
     switch (currentPage) {
       case "dashboard":
-        return user.role === "admin" ? 
-          <AdminDashboard {...commonProps} /> : 
-          <CustomerDashboard {...commonProps} />;
-      
+        return user.role === "admin" 
+          ? <AdminDashboard {...commonProps} />
+          : <CustomerDashboard {...commonProps} />;
+
+      case "profile":
+        // Ensure Profile gets the same treatment as other components
+        console.log("Rendering Profile component with props:", commonProps);
+        return <Profile {...commonProps} />;
+
       case "file-complaint":
         return <ComplaintForm {...commonProps} />;
-      
+
       case "track-status":
         return <Tracking {...commonProps} />;
-      
-      case "profile":
-        return <Profile {...commonProps} />;
-      
+
       case "aadhaar-verify":
         return <AadhaarVerification {...commonProps} />;
-      
+
       case "chat":
         return <Chat {...commonProps} />;
-      
+
+      case "community":
+        return (
+          <div className="max-w-4xl mx-auto p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Community Hub</h2>
+              <p className="text-gray-600">Coming soon! Connect with your community members.</p>
+            </div>
+          </div>
+        );
+
+      case "settings":
+        return (
+          <div className="max-w-4xl mx-auto p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Settings</h2>
+              <p className="text-gray-600">App settings and preferences will be available here.</p>
+            </div>
+          </div>
+        );
+
       default:
-        return user.role === "admin" ? 
-          <AdminDashboard {...commonProps} /> : 
-          <CustomerDashboard {...commonProps} />;
+        return user.role === "admin" 
+          ? <AdminDashboard {...commonProps} />
+          : <CustomerDashboard {...commonProps} />;
     }
   };
 
+  // Loading screen
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center space-x-3">
-            <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">CS</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">CivicSecure</h1>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-green-800 mb-2">CivicSecure</h1>
+            <p className="text-green-600">Connecting Citizens with Solutions</p>
           </div>
-          <FaSpinner className="animate-spin text-4xl text-green-600 mx-auto" />
-          <p className="text-gray-600">Loading your dashboard...</p>
+          
+          <div className="relative">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-200"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent absolute top-0"></div>
+          </div>
+          
+          <p className="text-sm text-gray-500 mt-4">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
 
+  // Main app render
   return (
     <div className="min-h-screen bg-gray-50">
       {user ? (
-        <Layout
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-          user={user}
-          onLogout={handleLogout}
-          currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
-        >
+        <Layout {...getCommonProps()}>
           {renderPageContent()}
         </Layout>
       ) : (
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+        // Login screen without layout
+        <div className="min-h-screen">
           {renderPageContent()}
+        </div>
+      )}
+      
+      {/* Global notifications */}
+      {notifications.length > 0 && (
+        <div className="fixed top-4 right-4 z-50 space-y-2">
+          {notifications.slice(-3).map(notification => (
+            <div
+              key={notification.id}
+              className={`px-4 py-3 rounded-lg shadow-lg text-white max-w-sm transform transition-all duration-300 ${
+                notification.type === 'success' ? 'bg-green-600' :
+                notification.type === 'error' ? 'bg-red-600' :
+                notification.type === 'warning' ? 'bg-yellow-600' : 'bg-blue-600'
+              }`}
+            >
+              <p className="text-sm">{notification.message}</p>
+            </div>
+          ))}
         </div>
       )}
     </div>

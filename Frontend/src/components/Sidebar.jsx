@@ -1,145 +1,177 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { 
-  FaHome, 
+  FaThLarge,        // Dashboard icon
   FaFileAlt, 
+  FaSearch, 
   FaUser, 
   FaIdCard, 
-  FaSearch, 
-  FaInfoCircle, 
+  FaComments, 
   FaUsers, 
+  FaCog, 
   FaSignOutAlt,
-  FaCog
+  FaBell
 } from "react-icons/fa";
 import ProfileAvatar from "./ProfileAvatar";
 
-const Sidebar = ({
-  currentPage,
-  setCurrentPage,
-  sidebarOpen,
-  setSidebarOpen,
-  user,
-  onLogout,
-}) => {
-  const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: FaHome },
-    { id: "file-complaint", label: "File Complaint", icon: FaFileAlt },
-    { id: "track-status", label: "Track Status", icon: FaSearch },
-    { id: "profile", label: "Profile", icon: FaUser },
-    { id: "aadhaar-verify", label: "Verify Aadhaar", icon: FaIdCard },
-    { id: "info-hub", label: "Info Hub", icon: FaInfoCircle },
-    { id: "community", label: "Community", icon: FaUsers },
-  ];
+export default function Sidebar({ 
+  user, 
+  onLogout, 
+  currentPage, 
+  setCurrentPage, 
+  sidebarOpen, 
+  setSidebarOpen 
+}) {
+  
+  const navigationItems = useMemo(() => {
+    const adminItems = [
+      { id: "dashboard", label: "Dashboard", icon: FaThLarge },
+      { id: "track-status", label: "All Complaints", icon: FaSearch },
+      { id: "community", label: "User Management", icon: FaUsers },
+      { id: "profile", label: "Profile", icon: FaUser },
+      { id: "settings", label: "Settings", icon: FaCog },
+    ];
 
-  const handleMenuClick = (pageId) => {
+    const customerItems = [
+      { id: "dashboard", label: "Dashboard", icon: FaThLarge },
+      { id: "file-complaint", label: "File Complaint", icon: FaFileAlt },
+      { id: "track-status", label: "Track Status", icon: FaSearch },
+      { id: "profile", label: "Profile", icon: FaUser },
+      { id: "aadhaar-verify", label: "Verify Aadhaar", icon: FaIdCard },
+      { id: "chat", label: "Support Chat", icon: FaComments },
+    ];
+
+    return user?.role === "admin" ? adminItems : customerItems;
+  }, [user?.role]);
+
+  const handleNavigation = (pageId) => {
     setCurrentPage(pageId);
-    setSidebarOpen(false); // Close sidebar on mobile after selection
+    if (window.innerWidth < 1024) {
+      setTimeout(() => setSidebarOpen(false), 150);
+    }
   };
 
-  const handleProfileClick = () => {
-    setCurrentPage("profile");
-    setSidebarOpen(false);
-  };
-
-  // Logic for role display
-  const displayRole = () => {
-    if (!user || !user.role) return "";
-    const roleLower = user.role.toString().toLowerCase();
-    if (roleLower === "admin" || roleLower === "administrator") {
-      return "Administrator";
+  const handleLogout = () => {
+    if (window.confirm("Are you sure you want to logout?")) {
+      onLogout();
     }
-    if (roleLower === "customer") {
-      return "Customer";
-    }
-    return user.role.charAt(0).toUpperCase() + user.role.slice(1);
   };
 
   return (
-    <aside
-      className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ease-in-out duration-300 bg-white border-r border-gray-200 shadow-lg ${
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      } lg:translate-x-0`}
-      aria-label="Sidebar navigation"
-    >
-      {/* Header - Branding */}
-      <div className="px-4 pt-6 pb-4 border-b border-gray-200">
+    <div className="flex flex-col h-full w-64 bg-white border-r border-gray-200 shadow-sm">
+      {/* Header Section */}
+      <div className="flex-shrink-0 p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">CS</span>
+          <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-lg">CS</span>
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">CivicSecure</h1>
-            <p className="text-xs text-gray-600">Citizen Grievance Hub</p>
+            <p className="text-xs text-gray-500">Connecting Citizens</p>
           </div>
         </div>
       </div>
 
       {/* User Profile Section */}
-      {user && (
-        <div className="px-4 py-4 bg-gradient-to-r from-green-50 to-blue-50 border-b border-gray-200">
-          <button
-            onClick={handleProfileClick}
-            className="flex items-center space-x-3 w-full p-3 rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200 group"
-          >
-            <ProfileAvatar name={user.name} avatarUrl={user.avatarUrl} />
-            <div className="flex-1 text-left min-w-0">
-              <div className="text-sm font-semibold text-gray-900 truncate group-hover:text-green-600 transition-colors">
-                {user.name}
-              </div>
-              <div className="text-xs text-gray-600">{displayRole()}</div>
-            </div>
-            <FaUser className="text-gray-400 group-hover:text-green-600 transition-colors" />
-          </button>
-        </div>
-      )}
-
-      {/* Navigation Menu */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {menuItems.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => handleMenuClick(id)}
-            className={`flex items-center w-full px-3 py-3 rounded-lg font-medium transition-all duration-200 ${
-              currentPage === id
-                ? "bg-green-600 text-white shadow-md transform scale-105"
-                : "text-gray-700 hover:bg-green-50 hover:text-green-700 hover:shadow-sm"
-            }`}
-            aria-current={currentPage === id ? "page" : undefined}
-          >
-            <Icon
-              className={`text-lg mr-3 ${
-                currentPage === id ? "text-white" : "text-gray-600"
-              }`}
-            />
-            <span className="text-sm font-medium">{label}</span>
-          </button>
-        ))}
-      </nav>
-
-      {/* Bottom Section */}
-      <div className="border-t border-gray-200">
-        {/* Logout Button */}
-        {user && (
-          <div className="p-3">
-            <button
-              onClick={() => {
-                setSidebarOpen(false);
-                if (onLogout) onLogout();
-              }}
-              className="flex items-center w-full px-3 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 hover:shadow-sm"
-            >
-              <FaSignOutAlt className="text-lg mr-3" />
-              <span className="text-sm font-medium">Logout</span>
-            </button>
+      <div className="flex-shrink-0 p-4 border-b border-gray-200">
+        <div 
+          onClick={() => handleNavigation("profile")}
+          className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+        >
+          <ProfileAvatar 
+            name={user?.name || "User"} 
+            avatarUrl={user?.avatarUrl}
+            size="w-10 h-10"
+          />
+          
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-gray-900 truncate">
+              {user?.name || "User Name"}
+            </h3>
+            <p className="text-sm text-gray-500 capitalize truncate">
+              {user?.role || "Member"}
+            </p>
           </div>
-        )}
+        </div>
 
-        {/* Footer */}
-        <div className="px-4 py-3 bg-gray-50">
-          <p className="text-xs text-gray-500 text-center">Version 2.0.0</p>
+        {/* Quick Stats Section - RESTORED */}
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-lg p-3 text-center shadow-sm border border-gray-100">
+            <div className="text-lg font-bold text-blue-600">12</div>
+            <div className="text-xs text-gray-600">
+              {user?.role === "admin" ? "Total" : "Reports"}
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-3 text-center shadow-sm border border-gray-100">
+            <div className="text-lg font-bold text-green-600">8</div>
+            <div className="text-xs text-gray-600">Resolved</div>
+          </div>
         </div>
       </div>
-    </aside>
-  );
-};
 
-export default Sidebar;
+      {/* Navigation Section */}
+      <nav className="flex-1 overflow-y-auto py-4">
+        <div className="space-y-1 px-3">
+          {navigationItems.map(({ id, label, icon: Icon }) => {
+            const isActive = currentPage === id;
+            
+            return (
+              <button
+                key={id}
+                onClick={() => handleNavigation(id)}
+                className={`
+                  w-full flex items-center space-x-3 px-4 py-3 text-left rounded-lg font-medium transition-colors duration-200
+                  ${isActive 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-green-600'
+                  }
+                `}
+              >
+                <Icon className={`text-lg ${isActive ? 'text-green-600' : 'text-gray-400'}`} />
+                <span className="truncate">{label}</span>
+                
+                {/* Notification badges */}
+                {id === "track-status" && !isActive && (
+                  <span className="ml-auto bg-red-100 text-red-600 text-xs rounded-full px-2 py-1">
+                    3
+                  </span>
+                )}
+                
+                {id === "chat" && !isActive && (
+                  <span className="ml-auto bg-blue-100 text-blue-600 text-xs rounded-full px-2 py-1">
+                    2
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Footer Section */}
+      <div className="flex-shrink-0 p-4 border-t border-gray-200 space-y-3">
+        {/* Notifications */}
+        <button className="w-full flex items-center space-x-3 px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-blue-600 rounded-lg transition-colors duration-200">
+          <FaBell className="text-lg text-gray-400" />
+          <span className="text-sm font-medium">Notifications</span>
+          <span className="ml-auto bg-red-100 text-red-600 text-xs rounded-full px-2 py-1">
+            5
+          </span>
+        </button>
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors duration-200"
+        >
+          <FaSignOutAlt className="text-sm" />
+          <span>Logout</span>
+        </button>
+        
+        {/* App Version */}
+        <div className="text-center pt-2">
+          <p className="text-xs text-gray-400">CivicSecure v1.0.0</p>
+        </div>
+      </div>
+    </div>
+  );
+}
