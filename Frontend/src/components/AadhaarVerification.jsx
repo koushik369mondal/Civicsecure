@@ -11,7 +11,6 @@ import {
   RESEND_COOLDOWN,
   isDev
 } from '../utils/otp';
-import Layout from './Layout';
 
 const VERIFICATION_STORAGE_KEY = 'aadhaarVerification';
 const VERIFICATION_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
@@ -401,354 +400,353 @@ const AadhaarVerification = ({
     };
   }, [frontPreview, backPreview]);
 
+  // REMOVED LAYOUT WRAPPER - NOW STANDALONE COMPONENT
   return (
-    <Layout>
-      <div className="w-full max-w-4xl mx-auto">
-        {/* Header */}
-        {showTitle && (
-          <div className="flex items-center mb-6">
-            <FaIdCard className="text-3xl text-emerald-600 mr-3" />
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              {title}
-            </h1>
-          </div>
-        )}
+    <div className="w-full max-w-4xl mx-auto">
+      {/* Header */}
+      {showTitle && (
+        <div className="flex items-center mb-6">
+          <FaIdCard className="text-3xl text-emerald-600 mr-3" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            {title}
+          </h1>
+        </div>
+      )}
 
-        {/* Form Step */}
-        {step === 'form' && (
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">
-              Verify Your Aadhaar
-            </h2>
-            <form onSubmit={handleSendOTP} className="space-y-6">
-              {/* Aadhaar Number Input */}
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Aadhaar Number
-                </label>
-                <input
-                  type="text"
-                  value={formData.aadhaarNumber}
-                  onChange={(e) => handleInputChange('aadhaarNumber', e.target.value.replace(/\D/g, ''))}
-                  onBlur={(e) => validateAadhaarOnBlur(e.target.value)}
-                  placeholder="Enter your 12-digit Aadhaar number"
-                  className={`w-full px-4 py-3 bg-white border rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${aadhaarError ? 'border-red-500' : 'border-gray-300'}`}
-                  maxLength={12}
-                  required
-                />
-                {aadhaarError && (
-                  <p className="text-red-600 text-sm mt-1">{aadhaarError}</p>
-                )}
-              </div>
-
-              {/* Phone Number Input */}
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => handleInputChange('phoneNumber', e.target.value.replace(/\D/g, ''))}
-                  placeholder="Enter your 10-digit phone number"
-                  className={`w-full px-4 py-3 bg-white border rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${phoneError ? 'border-red-500' : 'border-gray-300'}`}
-                  maxLength={10}
-                  required
-                />
-                {phoneError && (
-                  <p className="text-red-600 text-sm mt-1">{phoneError}</p>
-                )}
-              </div>
-
-              {/* Image Upload - Front Side */}
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Front Side of Aadhaar Card
-                </label>
-                <div className="space-y-3">
-                  <input
-                    ref={frontInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => e.target.files[0] && handleImageUpload(e.target.files[0], 'front')}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  />
-                  {imageErrors.front && (
-                    <p className="text-red-600 text-sm">{imageErrors.front}</p>
-                  )}
-                  {frontPreview && (
-                    <div className="relative inline-block">
-                      <img
-                        src={frontPreview}
-                        alt="Front side preview"
-                        className="w-48 h-32 object-cover rounded-lg border border-gray-300"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage('front')}
-                        className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm"
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Image Upload - Back Side */}
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  Back Side of Aadhaar Card
-                </label>
-                <div className="space-y-3">
-                  <input
-                    ref={backInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => e.target.files[0] && handleImageUpload(e.target.files[0], 'back')}
-                    className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  />
-                  {imageErrors.back && (
-                    <p className="text-red-600 text-sm">{imageErrors.back}</p>
-                  )}
-                  {backPreview && (
-                    <div className="relative inline-block">
-                      <img
-                        src={backPreview}
-                        alt="Back side preview"
-                        className="w-48 h-32 object-cover rounded-lg border border-gray-300"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage('back')}
-                        className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm"
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {generalError && (
-                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md flex items-center">
-                  <FaExclamationTriangle className="h-5 w-5 mr-2" />
-                  <span>{generalError}</span>
-                </div>
+      {/* Form Step */}
+      {step === 'form' && (
+        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">
+            Verify Your Aadhaar
+          </h2>
+          <form onSubmit={handleSendOTP} className="space-y-6">
+            {/* Aadhaar Number Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Aadhaar Number
+              </label>
+              <input
+                type="text"
+                value={formData.aadhaarNumber}
+                onChange={(e) => handleInputChange('aadhaarNumber', e.target.value.replace(/\D/g, ''))}
+                onBlur={(e) => validateAadhaarOnBlur(e.target.value)}
+                placeholder="Enter your 12-digit Aadhaar number"
+                className={`w-full px-4 py-3 bg-white border rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${aadhaarError ? 'border-red-500' : 'border-gray-300'}`}
+                maxLength={12}
+                required
+              />
+              {aadhaarError && (
+                <p className="text-red-600 text-sm mt-1">{aadhaarError}</p>
               )}
+            </div>
 
-              <div className="flex gap-4">
-                <button
-                  type="submit"
-                  className={`px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-sm transition-colors duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={loading || !canSubmitForm()}
-                >
-                  {loading ? (
-                    <>
-                      <FaSpinner className="animate-spin mr-2 inline-block" />
-                      Sending OTP...
-                    </>
-                  ) : (
-                    'Send OTP'
-                  )}
-                </button>
-                {onCancel && (
-                  <button
-                    type="button"
-                    onClick={onCancel}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-semibold rounded-md transition-colors duration-200"
-                  >
-                    Cancel
-                  </button>
+            {/* Phone Number Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => handleInputChange('phoneNumber', e.target.value.replace(/\D/g, ''))}
+                placeholder="Enter your 10-digit phone number"
+                className={`w-full px-4 py-3 bg-white border rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${phoneError ? 'border-red-500' : 'border-gray-300'}`}
+                maxLength={10}
+                required
+              />
+              {phoneError && (
+                <p className="text-red-600 text-sm mt-1">{phoneError}</p>
+              )}
+            </div>
+
+            {/* Image Upload - Front Side */}
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Front Side of Aadhaar Card
+              </label>
+              <div className="space-y-3">
+                <input
+                  ref={frontInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => e.target.files[0] && handleImageUpload(e.target.files[0], 'front')}
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
+                {imageErrors.front && (
+                  <p className="text-red-600 text-sm">{imageErrors.front}</p>
+                )}
+                {frontPreview && (
+                  <div className="relative inline-block">
+                    <img
+                      src={frontPreview}
+                      alt="Front side preview"
+                      className="w-48 h-32 object-cover rounded-lg border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage('front')}
+                      className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm"
+                    >
+                      <FaTimes />
+                    </button>
+                  </div>
                 )}
               </div>
-            </form>
-          </div>
-        )}
+            </div>
 
-        {/* OTP Step */}
-        {step === 'otp' && (
-          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900">Enter OTP</h2>
-            <p className="text-gray-700 mb-4">
-              OTP has been sent to {maskPhoneNumber(formData.phoneNumber)}
-            </p>
+            {/* Image Upload - Back Side */}
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Back Side of Aadhaar Card
+              </label>
+              <div className="space-y-3">
+                <input
+                  ref={backInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => e.target.files[0] && handleImageUpload(e.target.files[0], 'back')}
+                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
+                {imageErrors.back && (
+                  <p className="text-red-600 text-sm">{imageErrors.back}</p>
+                )}
+                {backPreview && (
+                  <div className="relative inline-block">
+                    <img
+                      src={backPreview}
+                      alt="Back side preview"
+                      className="w-48 h-32 object-cover rounded-lg border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage('back')}
+                      className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm"
+                    >
+                      <FaTimes />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
 
-            {/* Development OTP Display */}
-            {isDev && devOTP && (
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4">
-                <p className="text-blue-800 text-sm font-medium mb-1">
-                  🔧 Development Mode
-                </p>
-                <p className="text-blue-700 text-lg font-mono">
-                  OTP: <span className="font-bold">{devOTP}</span>
-                </p>
+            {generalError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md flex items-center">
+                <FaExclamationTriangle className="h-5 w-5 mr-2" />
+                <span>{generalError}</span>
               </div>
             )}
 
-            <form onSubmit={handleVerifyOTP} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">
-                  OTP
-                </label>
-                <input
-                  type="text"
-                  value={formData.otp}
-                  onChange={(e) => handleInputChange('otp', e.target.value.replace(/\D/g, ''))}
-                  placeholder="Enter 6-digit OTP"
-                  className={`w-full px-4 py-3 bg-white border rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${otpError ? 'border-red-500' : 'border-gray-300'}`}
-                  maxLength={6}
-                  required
-                />
-                {otpError && (
-                  <p className="text-red-600 text-sm mt-1">{otpError}</p>
-                )}
-              </div>
-
-              <div className="flex items-center gap-4 text-sm text-gray-700">
-                {otpTimer > 0 ? (
-                  <span className="flex items-center gap-2">
-                    <FaClock />
-                    Expires in {formatTime(otpTimer)}
-                  </span>
+            <div className="flex gap-4">
+              <button
+                type="submit"
+                className={`px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-sm transition-colors duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={loading || !canSubmitForm()}
+              >
+                {loading ? (
+                  <>
+                    <FaSpinner className="animate-spin mr-2 inline-block" />
+                    Sending OTP...
+                  </>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleResendOTP}
-                    className="text-emerald-600 hover:text-emerald-700 font-medium underline"
-                    disabled={resendCooldown > 0 || loading}
-                  >
-                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
-                  </button>
+                  'Send OTP'
                 )}
-              </div>
-
-              {showOtpExpired && (
-                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md flex items-center">
-                  <FaClock className="h-5 w-5 mr-2" />
-                  <span>OTP has expired. Please request a new one.</span>
-                </div>
-              )}
-
-              {generalError && (
-                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md flex items-center">
-                  <FaExclamationTriangle className="h-5 w-5 mr-2" />
-                  <span>{generalError}</span>
-                </div>
-              )}
-
-              <div className="flex gap-4">
-                <button
-                  type="submit"
-                  className={`px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-sm transition-colors duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={loading || showOtpExpired}
-                >
-                  {loading ? (
-                    <>
-                      <FaSpinner className="animate-spin mr-2 inline-block" />
-                      Verifying...
-                    </>
-                  ) : (
-                    'Verify OTP'
-                  )}
-                </button>
+              </button>
+              {onCancel && (
                 <button
                   type="button"
-                  onClick={handleStartOver}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-semibold rounded-md transition-colors duration-200 flex items-center"
+                  onClick={onCancel}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-semibold rounded-md transition-colors duration-200"
                 >
-                  <FaArrowLeft className="mr-2" />
-                  Start Over
+                  Cancel
                 </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Success Step */}
-        {step === 'success' && (
-          <div className="space-y-4">
-            {/* Success Banner */}
-            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-              <div className="flex items-center">
-                <FaCheckCircle className="text-green-600 text-2xl mr-3" />
-                <h2 className="text-xl font-bold text-green-800">
-                  Aadhaar Successfully Verified
-                </h2>
-              </div>
+              )}
             </div>
+          </form>
+        </div>
+      )}
 
-            {/* Verification Details Card */}
-            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">
-                Verification Details
-              </h3>
+      {/* OTP Step */}
+      {step === 'otp' && (
+        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Enter OTP</h2>
+          <p className="text-gray-700 mb-4">
+            OTP has been sent to {maskPhoneNumber(formData.phoneNumber)}
+          </p>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <span className="font-medium text-gray-900 min-w-[120px] mb-1 sm:mb-0">
-                    Aadhaar:
-                  </span>
-                  <span className="text-gray-900 font-mono text-lg">
-                    {maskAadhaar(formData.aadhaarNumber)}
-                  </span>
-                </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <span className="font-medium text-gray-900 min-w-[120px] mb-1 sm:mb-0">
-                    Phone:
-                  </span>
-                  <span className="text-gray-900 font-mono text-lg">
-                    +91-{maskPhoneNumber(formData.phoneNumber)}
-                  </span>
-                </div>
-
-                <div className="flex flex-col sm:flex-row sm:items-center">
-                  <span className="font-medium text-gray-900 min-w-[120px] mb-1 sm:mb-0">
-                    Verified on:
-                  </span>
-                  <span className="text-gray-900">
-                    {new Date(verificationData?.verificationTimestamp).toLocaleString('en-IN', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true
-                    })}
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-green-600 text-sm mt-4 italic font-medium flex items-center">
-                <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-                Verification valid for 10 minutes
+          {/* Development OTP Display */}
+          {isDev && devOTP && (
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4">
+              <p className="text-blue-800 text-sm font-medium mb-1">
+                🔧 Development Mode
               </p>
+              <p className="text-blue-700 text-lg font-mono">
+                OTP: <span className="font-bold">{devOTP}</span>
+              </p>
+            </div>
+          )}
 
-              <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                <button
-                  onClick={handleVerifyDifferent}
-                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-sm transition-colors duration-200 flex items-center justify-center"
-                >
-                  <FaRedo className="mr-2" />
-                  Verify Different Number
-                </button>
+          <form onSubmit={handleVerifyOTP} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                OTP
+              </label>
+              <input
+                type="text"
+                value={formData.otp}
+                onChange={(e) => handleInputChange('otp', e.target.value.replace(/\D/g, ''))}
+                placeholder="Enter 6-digit OTP"
+                className={`w-full px-4 py-3 bg-white border rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${otpError ? 'border-red-500' : 'border-gray-300'}`}
+                maxLength={6}
+                required
+              />
+              {otpError && (
+                <p className="text-red-600 text-sm mt-1">{otpError}</p>
+              )}
+            </div>
 
+            <div className="flex items-center gap-4 text-sm text-gray-700">
+              {otpTimer > 0 ? (
+                <span className="flex items-center gap-2">
+                  <FaClock />
+                  Expires in {formatTime(otpTimer)}
+                </span>
+              ) : (
                 <button
-                  onClick={() => window.history.back()}
-                  className="px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-semibold rounded-md transition-colors duration-200 flex items-center justify-center"
+                  type="button"
+                  onClick={handleResendOTP}
+                  className="text-emerald-600 hover:text-emerald-700 font-medium underline"
+                  disabled={resendCooldown > 0 || loading}
                 >
-                  <FaArrowLeft className="mr-2" />
-                  Back to Dashboard
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
                 </button>
+              )}
+            </div>
+
+            {showOtpExpired && (
+              <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md flex items-center">
+                <FaClock className="h-5 w-5 mr-2" />
+                <span>OTP has expired. Please request a new one.</span>
               </div>
+            )}
+
+            {generalError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md flex items-center">
+                <FaExclamationTriangle className="h-5 w-5 mr-2" />
+                <span>{generalError}</span>
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <button
+                type="submit"
+                className={`px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-sm transition-colors duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={loading || showOtpExpired}
+              >
+                {loading ? (
+                  <>
+                    <FaSpinner className="animate-spin mr-2 inline-block" />
+                    Verifying...
+                  </>
+                ) : (
+                  'Verify OTP'
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleStartOver}
+                className="px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-semibold rounded-md transition-colors duration-200 flex items-center"
+              >
+                <FaArrowLeft className="mr-2" />
+                Start Over
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Success Step */}
+      {step === 'success' && (
+        <div className="space-y-4">
+          {/* Success Banner */}
+          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+            <div className="flex items-center">
+              <FaCheckCircle className="text-green-600 text-2xl mr-3" />
+              <h2 className="text-xl font-bold text-green-800">
+                Aadhaar Successfully Verified
+              </h2>
             </div>
           </div>
-        )}
-      </div>
-    </Layout>
+
+          {/* Verification Details Card */}
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900">
+              Verification Details
+            </h3>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center">
+                <span className="font-medium text-gray-900 min-w-[120px] mb-1 sm:mb-0">
+                  Aadhaar:
+                </span>
+                <span className="text-gray-900 font-mono text-lg">
+                  {maskAadhaar(formData.aadhaarNumber)}
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center">
+                <span className="font-medium text-gray-900 min-w-[120px] mb-1 sm:mb-0">
+                  Phone:
+                </span>
+                <span className="text-gray-900 font-mono text-lg">
+                  +91-{maskPhoneNumber(formData.phoneNumber)}
+                </span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center">
+                <span className="font-medium text-gray-900 min-w-[120px] mb-1 sm:mb-0">
+                  Verified on:
+                </span>
+                <span className="text-gray-900">
+                  {new Date(verificationData?.verificationTimestamp).toLocaleString('en-IN', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-green-600 text-sm mt-4 italic font-medium flex items-center">
+              <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              Verification valid for 10 minutes
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+              <button
+                onClick={handleVerifyDifferent}
+                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-md shadow-sm transition-colors duration-200 flex items-center justify-center"
+              >
+                <FaRedo className="mr-2" />
+                Verify Different Number
+              </button>
+
+              <button
+                onClick={() => window.history.back()}
+                className="px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-semibold rounded-md transition-colors duration-200 flex items-center justify-center"
+              >
+                <FaArrowLeft className="mr-2" />
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

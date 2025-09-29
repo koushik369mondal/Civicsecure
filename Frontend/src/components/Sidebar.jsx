@@ -1,36 +1,49 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { 
-  FaHome, 
+  FaThLarge,        // Dashboard icon
   FaFileAlt, 
+  FaSearch, 
   FaUser, 
   FaIdCard, 
-  FaSearch, 
-  FaInfoCircle, 
+  FaComments, 
   FaUsers, 
+  FaCog, 
   FaSignOutAlt,
   FaShieldAlt
 } from "react-icons/fa";
 import ProfileAvatar from "./ProfileAvatar";
 
-const Sidebar = ({
-  currentPage,
-  setCurrentPage,
-  sidebarOpen,
-  setSidebarOpen,
-  user,
-  onLogout,
-}) => {
-  const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: FaHome },
-    { id: "file-complaint", label: "File Complaint", icon: FaFileAlt },
-    { id: "track-status", label: "Track Status", icon: FaSearch },
-    { id: "profile", label: "Profile", icon: FaUser },
-    { id: "aadhaar-verify", label: "Verify Aadhaar", icon: FaIdCard },
-    { id: "info-hub", label: "Info Hub", icon: FaInfoCircle },
-    { id: "community", label: "Community", icon: FaUsers },
-  ];
+export default function Sidebar({ 
+  user, 
+  onLogout, 
+  currentPage, 
+  setCurrentPage, 
+  sidebarOpen, 
+  setSidebarOpen 
+}) {
+  
+  const navigationItems = useMemo(() => {
+    const adminItems = [
+      { id: "dashboard", label: "Dashboard", icon: FaThLarge },
+      { id: "track-status", label: "All Complaints", icon: FaSearch },
+      { id: "community", label: "User Management", icon: FaUsers },
+      { id: "profile", label: "Profile", icon: FaUser },
+      { id: "settings", label: "Settings", icon: FaCog },
+    ];
 
-  const handleMenuClick = (pageId) => {
+    const customerItems = [
+      { id: "dashboard", label: "Dashboard", icon: FaThLarge },
+      { id: "file-complaint", label: "File Complaint", icon: FaFileAlt },
+      { id: "track-status", label: "Track Status", icon: FaSearch },
+      { id: "profile", label: "Profile", icon: FaUser },
+      { id: "aadhaar-verify", label: "Verify Aadhaar", icon: FaIdCard },
+      { id: "chat", label: "Support Chat", icon: FaComments },
+    ];
+
+    return user?.role === "admin" ? adminItems : customerItems;
+  }, [user?.role]);
+
+  const handleNavigation = (pageId) => {
     setCurrentPage(pageId);
     setSidebarOpen(false); // Close sidebar on mobile after selection
   };
@@ -83,7 +96,6 @@ const Sidebar = ({
     if (roleLower === "customer") {
       return "Customer";
     }
-    return user.role.charAt(0).toUpperCase() + user.role.slice(1);
   };
 
   return (
@@ -150,7 +162,7 @@ const Sidebar = ({
             <FaUser className="text-gray-400 group-hover:text-emerald-600 transition-colors" />
           </button>
         </div>
-      )}
+      </div>
 
       {/* Navigation Menu - Enhanced */}
       <div className="flex-1 px-3 sm:px-4 py-4 sm:py-6 overflow-y-auto">
@@ -205,8 +217,6 @@ const Sidebar = ({
           <p className="text-xs text-gray-400">© 2025 CivicSecure</p>
         </div>
       </div>
-    </aside>
+    </div>
   );
-};
-
-export default Sidebar;
+}
