@@ -7,9 +7,10 @@ const pool = new Pool({
   database: process.env.DB_NAME || "NaiyakSetu_db",
   password: process.env.DB_PASSWORD || "123456",
   port: process.env.DB_PORT || 5432,
+  ssl: process.env.DB_HOST && process.env.DB_HOST.includes('supabase.co') ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
   acquireTimeoutMillis: 60000,
 });
 
