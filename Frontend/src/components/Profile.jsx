@@ -16,6 +16,7 @@ import {
   FaCog,
   FaChartLine
 } from 'react-icons/fa';
+import { userProfileAPI } from '../services/api';
 
 // Constants - Matching Dashboard Style
 const PROFILE_STORAGE_KEY = 'userProfile';
@@ -539,33 +540,36 @@ export default function Profile({ setCurrentPage }) {
     checkAadhaarVerification();
   }, []);
 
-  const loadProfileData = useCallback(() => {
+  const loadProfileData = useCallback(async () => {
     try {
-      // First, check for stored profile data
-      const storedProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
-      if (storedProfile) {
-        const profileData = JSON.parse(storedProfile);
-        const now = Date.now();
-        const profileTime = new Date(profileData.timestamp).getTime();
-
-        if (now - profileTime < PROFILE_DURATION) {
-          setFormData({
-            fullName: profileData.fullName || profileData.username || '',
-            email: profileData.email || '',
-            phone: profileData.phone || '',
-            aadhaar: profileData.aadhaar || ''
-          });
-          setProfilePhoto(profileData.profilePhoto || null);
-          return; // Exit early if we have valid stored data
-        } else {
-          localStorage.removeItem(PROFILE_STORAGE_KEY);
+      setLoading(true);
+      // Fetch profile data from database API instead of localStorage
+      const response = await userProfileAPI.getCurrentProfile();
+      
+      if (response.success && response.data.profile) {
+        const profile = response.data.profile;
+        
+        // Map database fields to form fields
+        setFormData({
+          fullName: profile.name || "",
+          email: profile.email || "",
+          phone: profile.phone || "",
+          aadhaar: "" // Add aadhaar field when available in schema
+        });
+        
+        // Set profile photo if available
+        if (profile.avatar_url) {
+          setProfilePhoto(profile.avatar_url);
         }
+      } else {
+        // No profile found, keep fields empty for user to fill
+        console.log('No profile found in database, fields will remain empty');
       }
-
-      // Removed auto-population from user credentials to keep profile section empty by default
     } catch (error) {
       console.error('Error loading profile data:', error);
-      localStorage.removeItem(PROFILE_STORAGE_KEY);
+      // On error, keep fields empty so user can enter their data
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -595,14 +599,30 @@ export default function Profile({ setCurrentPage }) {
     }
   }, [formData.aadhaar]);
 
-  const saveProfileData = useCallback(() => {
-    const profileData = {
-      ...formData,
-      profilePhoto,
-      timestamp: new Date().toISOString()
-    };
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profileData));
-  }, [formData, profilePhoto]);
+  const saveProfileData = useCallback(async () => {
+    try {
+      // Save profile data to database instead of localStorage
+      const profileData = {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone
+        // aadhaar: formData.aadhaar // Add when schema supports it
+      };
+      
+      const response = await userProfileAPI.updateCurrentProfile(profileData);
+      
+      if (response.success) {
+        console.log('Profile saved to database successfully');
+        return true;
+      } else {
+        console.error('Failed to save profile to database:', response.message);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error saving profile data:', error);
+      return false;
+    }
+  }, [formData]);
 
   const handlePhotoChange = useCallback((file) => {
     setPhotoError('');
@@ -670,10 +690,15 @@ export default function Profile({ setCurrentPage }) {
     }
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      saveProfileData();
-      setUpdateSuccess(true);
-      setTimeout(() => setUpdateSuccess(false), 4000);
+      // Save profile data to database
+      const saveSuccess = await saveProfileData();
+      
+      if (saveSuccess) {
+        setUpdateSuccess(true);
+        setTimeout(() => setUpdateSuccess(false), 4000);
+      } else {
+        console.error('Failed to save profile data');
+      }
     } catch (error) {
       console.error('Profile update failed:', error);
     } finally {

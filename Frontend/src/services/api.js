@@ -128,6 +128,17 @@ export const userProfileAPI = {
     updateProfile: async (userId, profileData) => {
         const response = await api.put(`/users/user-profile/${userId}`, profileData);
         return response.data;
+    },
+
+    // New APIs for current user profile
+    getCurrentProfile: async () => {
+        const response = await api.get('/users/profile');
+        return response.data;
+    },
+    
+    updateCurrentProfile: async (profileData) => {
+        const response = await api.put('/users/profile', profileData);
+        return response.data;
     }
 };
 
