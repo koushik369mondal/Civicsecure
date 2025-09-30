@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Layout from "./components/Layout";
-import Login from "./components/Login";
+import Auth from "./components/Auth";
 import AdminDashboard from "./components/AdminDashboard";
 import CustomerDashboard from "./components/CustomerDashboard";
 import ComplaintForm from "./components/ComplaintForm";
@@ -120,7 +120,7 @@ function App() {
   // Centralized page content rendering
   const renderPageContent = () => {
     if (!user) {
-      return <Login onLoginSuccess={handleLoginSuccess} />;
+      return <Auth onLoginSuccess={handleLoginSuccess} />;
     }
 
     const commonProps = getCommonProps();

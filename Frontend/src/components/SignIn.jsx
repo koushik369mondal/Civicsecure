@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash, FaUser, FaLock } from "react-icons/fa";
+import { supabaseAuth, userProfileAPI } from "../services/supabase";
 
+// Demo users for fallback authentication
 const demoUsers = {
   "naiyaksetu@gmail.com": { password: "123456", role: "admin", name: "Administrator" },
   "customer@email.com": { password: "123456", role: "customer", name: "Customer User" },
 };
 
-export default function Login({ onLoginSuccess }) {
+export default function SignIn({ onLoginSuccess, onSwitchToSignUp }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,21 +24,55 @@ export default function Login({ onLoginSuccess }) {
     setIsLoading(true);
     setError("");
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      // First try demo users for quick testing
+      const demoUser = demoUsers[email.trim().toLowerCase()];
+      if (demoUser && demoUser.password === password) {
+        // Use demo user data
+        const userData = {
+          id: `demo-${demoUser.role}`,
+          email: email.trim().toLowerCase(),
+          name: demoUser.name,
+          role: demoUser.role,
+          phone: '',
+          is_verified: true
+        };
+        
+        onLoginSuccess(userData);
+        setIsLoading(false);
+        return;
+      }
 
-    const user = demoUsers[email.trim().toLowerCase()];
-    if (!user || user.password !== password) {
-      setError("Invalid credentials — please check your email and password and try again.");
-      setIsLoading(false);
-      return;
+      // If not a demo user, try Supabase authentication
+      const { data, error } = await supabaseAuth.signIn(email.trim().toLowerCase(), password);
+      
+      if (error) {
+        setError(error.message || "Invalid credentials — please check your email and password and try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Get user profile from our users table
+        const { data: profile, error: profileError } = await userProfileAPI.getProfile(data.user.id);
+        
+        const userData = {
+          id: data.user.id,
+          email: data.user.email,
+          name: profile?.full_name || data.user.user_metadata?.full_name || data.user.email,
+          role: profile?.role || 'customer',
+          phone: profile?.phone || data.user.user_metadata?.phone || '',
+          is_verified: profile?.is_verified || false
+        };
+
+        // Call the success callback with user data
+        onLoginSuccess(userData);
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      console.error("Sign in error:", err);
     }
-
-    onLoginSuccess({
-      name: user.name,
-      role: user.role,
-      email: email.trim().toLowerCase()
-    });
+    
     setIsLoading(false);
   };
 
@@ -47,14 +83,14 @@ export default function Login({ onLoginSuccess }) {
         <div className="text-center">
           <div className="flex items-center justify-center space-x-3 mb-6">
             <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-xl">CS</span>
+              <span className="text-white font-bold text-xl">NS</span>
             </div>
             <h1 className="text-3xl font-bold text-gray-900">NaiyakSetu</h1>
           </div>
           <p className="text-gray-600">Sign in to your account to continue</p>
         </div>
 
-        {/* Login Form */}
+        {/* Sign In Form */}
         <div className="bg-white py-8 px-6 shadow-xl rounded-xl border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
@@ -138,6 +174,19 @@ export default function Login({ onLoginSuccess }) {
               )}
             </button>
           </form>
+
+          {/* Switch to Sign Up */}
+          <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{" "}
+              <button
+                onClick={onSwitchToSignUp}
+                className="font-medium text-green-600 hover:text-green-500 transition-colors"
+              >
+                Sign up here
+              </button>
+            </p>
+          </div>
 
           {/* Demo Credentials */}
           <div className="mt-6 pt-6 border-t border-gray-200">
