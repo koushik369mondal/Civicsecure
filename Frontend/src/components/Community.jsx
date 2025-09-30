@@ -118,6 +118,12 @@ function Community() {
   const handleMediaImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Revoke previous object URL to prevent memory leak
+    if (newImagePreview) {
+      URL.revokeObjectURL(newImagePreview);
+    }
+    
     setNewImageFile(file);
     const url = URL.createObjectURL(file);
     setNewImagePreview(url);
@@ -143,6 +149,12 @@ function Community() {
       timestamp: "Just now",
     };
     setMediaPosts((prev) => [newEntry, ...prev]);
+    
+    // Revoke object URL after post creation to prevent memory leak
+    if (newImagePreview) {
+      URL.revokeObjectURL(newImagePreview);
+    }
+    
     setNewMediaText("");
     setNewImageFile(null);
     setNewImagePreview(null);
@@ -236,7 +248,7 @@ function Community() {
                   <div className="text-2xl bg-emerald-50 p-3 rounded-full">{community.icon}</div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded text-sm">
+                      <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
                         #{index + 1}
                       </span>
                       <h2 className="font-semibold text-lg text-gray-900">{community.name}</h2>
