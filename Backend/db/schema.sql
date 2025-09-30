@@ -1,4 +1,4 @@
--- CivicSecure Database Schema for Supabase
+-- NaiyakSetu Database Schema for Supabase
 -- This script creates all necessary tables for the complaint management system
 
 -- Enable UUID extension if not already enabled
@@ -127,35 +127,35 @@ CREATE INDEX IF NOT EXISTS idx_otp_expiry ON otp_codes(otp_expiry);
 
 -- Insert default departments (ignore if they already exist)
 INSERT INTO departments (name, description, contact_email, contact_phone) 
-SELECT 'Roads & Infrastructure', 'Handles road maintenance, potholes, and infrastructure issues', 'roads@civicsecure.gov', '+91-1234567801'
+SELECT 'Roads & Infrastructure', 'Handles road maintenance, potholes, and infrastructure issues', 'roads@NaiyakSetu.gov', '+91-1234567801'
 WHERE NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Roads & Infrastructure');
 
 INSERT INTO departments (name, description, contact_email, contact_phone) 
-SELECT 'Water Supply', 'Manages water supply, quality, and distribution issues', 'water@civicsecure.gov', '+91-1234567802'
+SELECT 'Water Supply', 'Manages water supply, quality, and distribution issues', 'water@NaiyakSetu.gov', '+91-1234567802'
 WHERE NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Water Supply');
 
 INSERT INTO departments (name, description, contact_email, contact_phone) 
-SELECT 'Electricity', 'Handles power outages, electrical faults, and billing issues', 'electricity@civicsecure.gov', '+91-1234567803'
+SELECT 'Electricity', 'Handles power outages, electrical faults, and billing issues', 'electricity@NaiyakSetu.gov', '+91-1234567803'
 WHERE NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Electricity');
 
 INSERT INTO departments (name, description, contact_email, contact_phone) 
-SELECT 'Sanitation & Waste', 'Manages garbage collection, waste disposal, and cleanliness', 'sanitation@civicsecure.gov', '+91-1234567804'
+SELECT 'Sanitation & Waste', 'Manages garbage collection, waste disposal, and cleanliness', 'sanitation@NaiyakSetu.gov', '+91-1234567804'
 WHERE NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Sanitation & Waste');
 
 INSERT INTO departments (name, description, contact_email, contact_phone) 
-SELECT 'Public Safety', 'Handles safety concerns, security, and emergency services', 'safety@civicsecure.gov', '+91-1234567805'
+SELECT 'Public Safety', 'Handles safety concerns, security, and emergency services', 'safety@NaiyakSetu.gov', '+91-1234567805'
 WHERE NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Public Safety');
 
 INSERT INTO departments (name, description, contact_email, contact_phone) 
-SELECT 'Traffic & Transportation', 'Manages traffic issues, public transport, and parking', 'traffic@civicsecure.gov', '+91-1234567806'
+SELECT 'Traffic & Transportation', 'Manages traffic issues, public transport, and parking', 'traffic@NaiyakSetu.gov', '+91-1234567806'
 WHERE NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Traffic & Transportation');
 
 INSERT INTO departments (name, description, contact_email, contact_phone) 
-SELECT 'Environment', 'Handles pollution, environmental concerns, and green initiatives', 'environment@civicsecure.gov', '+91-1234567807'
+SELECT 'Environment', 'Handles pollution, environmental concerns, and green initiatives', 'environment@NaiyakSetu.gov', '+91-1234567807'
 WHERE NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Environment');
 
 INSERT INTO departments (name, description, contact_email, contact_phone) 
-SELECT 'Health Services', 'Manages public health facilities and medical services', 'health@civicsecure.gov', '+91-1234567808'
+SELECT 'Health Services', 'Manages public health facilities and medical services', 'health@NaiyakSetu.gov', '+91-1234567808'
 WHERE NOT EXISTS (SELECT 1 FROM departments WHERE name = 'Health Services');
 
 -- Add comments

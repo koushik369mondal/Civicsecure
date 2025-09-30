@@ -74,7 +74,7 @@ export default function Sidebar({
         "sessionData",
         "tempData",
         "userComplaints",
-        "civicSecureUser"
+        "NaiyakSetuUser"
       ];
       keysToRemove.forEach((k) => localStorage.removeItem(k));
       sessionStorage.clear();
@@ -118,7 +118,7 @@ export default function Sidebar({
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-bold text-emerald-600 truncate">
-                CivicSecure
+                NaiyakSetu
               </h1>
               <p className="text-gray-600 text-xs sm:text-sm truncate">
                 Citizen Grievance Hub
@@ -182,15 +182,15 @@ export default function Sidebar({
                       if (sidebarOpen && setSidebarOpen) setSidebarOpen(false);
                     }}
                     className={`flex items-center w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg font-medium transition-all duration-200 group ${active
-                        ? "bg-emerald-600 text-white shadow-md transform scale-105"
-                        : "text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 hover:transform hover:scale-102"
+                      ? "bg-emerald-600 text-white shadow-md transform scale-105"
+                      : "text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 hover:transform hover:scale-102"
                       }`}
                     aria-current={active ? "page" : undefined}
                   >
                     <Icon
                       className={`text-base sm:text-lg mr-3 sm:mr-4 transition-colors duration-200 flex-shrink-0 ${active
-                          ? "text-white"
-                          : "text-gray-600 group-hover:text-emerald-600"
+                        ? "text-white"
+                        : "text-gray-600 group-hover:text-emerald-600"
                         }`}
                     />
                     <span className="text-sm font-medium truncate">{label}</span>
@@ -219,7 +219,7 @@ export default function Sidebar({
 
         <div className="pt-2 sm:pt-3 border-t border-gray-200 text-center">
           <p className="text-xs text-gray-500 mb-1">Version 2.0.0</p>
-          <p className="text-xs text-gray-400">© 2025 CivicSecure</p>
+          <p className="text-xs text-gray-400">© 2025 NaiyakSetu</p>
         </div>
       </div>
     </aside>

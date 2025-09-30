@@ -34,7 +34,7 @@ app.use(express.urlencoded({ extended: true }));
 const pool = new Pool({
   user: process.env.DB_USER || "postgres",
   host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "civicsecure_db",
+  database: process.env.DB_NAME || "NaiyakSetu_db",
   password: process.env.DB_PASSWORD || "123456",
   port: process.env.DB_PORT || 5432,
   max: 20, // maximum number of clients in the pool
@@ -57,9 +57,9 @@ pool.connect((err, client, release) => {
 const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 OTP requests per IP
-  message: { 
-    success: false, 
-    message: 'Too many OTP requests. Try again later.' 
+  message: {
+    success: false,
+    message: 'Too many OTP requests. Try again later.'
   },
   standardHeaders: 'draft-7',
   legacyHeaders: false,
@@ -75,9 +75,9 @@ const otpLimiter = rateLimit({
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // 10 login attempts per IP
-  message: { 
-    success: false, 
-    message: 'Too many login attempts. Try again later.' 
+  message: {
+    success: false,
+    message: 'Too many login attempts. Try again later.'
   },
   standardHeaders: 'draft-7',
   legacyHeaders: false
@@ -98,7 +98,7 @@ app.use(generalLimiter);
 app.get("/api/track/:complaintId", async (req, res) => {
   try {
     const { complaintId } = req.params;
-    
+
     const result = await pool.query(
       `SELECT 
         complaint_id,
@@ -114,23 +114,23 @@ app.get("/api/track/:complaintId", async (req, res) => {
        WHERE complaint_id = $1`,
       [complaintId]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Complaint not found with this ID"
       });
     }
-    
+
     res.json({
       success: true,
       complaint: result.rows[0]
     });
   } catch (error) {
     console.error("Failed to track complaint:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Failed to track complaint" 
+      message: "Failed to track complaint"
     });
   }
 });
@@ -140,7 +140,7 @@ app.get("/api/complaints/recent", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
     const offset = parseInt(req.query.offset) || 0;
-    
+
     const result = await pool.query(
       `SELECT 
         complaint_id,
@@ -155,7 +155,7 @@ app.get("/api/complaints/recent", async (req, res) => {
        LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
-    
+
     res.json({
       success: true,
       complaints: result.rows,
@@ -163,9 +163,9 @@ app.get("/api/complaints/recent", async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to fetch recent complaints:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Failed to fetch recent complaints" 
+      message: "Failed to fetch recent complaints"
     });
   }
 });
@@ -182,7 +182,7 @@ app.get("/api/complaints/stats", async (req, res) => {
         COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed
        FROM complaints`
     );
-    
+
     const categoryResult = await pool.query(
       `SELECT 
         category,
@@ -191,7 +191,7 @@ app.get("/api/complaints/stats", async (req, res) => {
        GROUP BY category 
        ORDER BY count DESC`
     );
-    
+
     res.json({
       success: true,
       stats: {
@@ -207,9 +207,9 @@ app.get("/api/complaints/stats", async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to fetch complaint stats:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Failed to fetch complaint statistics" 
+      message: "Failed to fetch complaint statistics"
     });
   }
 });
@@ -233,8 +233,8 @@ const validatePhoneNumber = (phone) => {
 // Generate JWT token with additional security
 const generateToken = (userId, phone) => {
   return jwt.sign(
-    { 
-      userId, 
+    {
+      userId,
       phone,
       timestamp: Date.now(),
       iat: Math.floor(Date.now() / 1000)
@@ -265,7 +265,7 @@ const authenticateToken = async (req, res, next) => {
         } else if (err.name === 'JsonWebTokenError') {
           message = 'Invalid token format';
         }
-        
+
         return res.status(401).json({
           success: false,
           message: message
@@ -309,17 +309,17 @@ const sendOTP = async (phoneNumber, otp) => {
   if (process.env.NODE_ENV === 'production') {
     try {
       console.log('Attempting to send SMS via MSG91...');
-      
-      const message = `Your CivicSecure verification code is ${otp}. Valid for 5 minutes.`;
-      
+
+      const message = `Your NaiyakSetu verification code is ${otp}. Valid for 5 minutes.`;
+
       const url = `https://control.msg91.com/api/sendhttp.php?authkey=${process.env.MSG91_API_KEY}&mobiles=${phoneNumber.replace('+91', '')}&message=${encodeURIComponent(message)}&sender=CIVSEC&route=4`;
-      
+
       const response = await fetch(url);
       const result = await response.text();
-      
+
       console.log('MSG91 Response:', result);
       console.log('Response Status:', response.status);
-      
+
       if (response.ok && !result.includes('ERROR')) {
         console.log('✅ SMS sent successfully via MSG91');
         return { success: true };
@@ -362,10 +362,10 @@ setInterval(cleanupExpiredOTPs, 60 * 60 * 1000);
 // Send OTP endpoint
 app.post("/api/send-otp", otpLimiter, async (req, res) => {
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
-    
+
     const { phoneNumber } = req.body;
 
     // Validation
@@ -437,10 +437,10 @@ app.post("/api/send-otp", otpLimiter, async (req, res) => {
 // Verify OTP endpoint
 app.post("/api/verify-otp", loginLimiter, async (req, res) => {
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN');
-    
+
     const { phoneNumber, otp } = req.body;
 
     // Validation
@@ -509,7 +509,7 @@ app.post("/api/verify-otp", loginLimiter, async (req, res) => {
         [otpRecord.id]
       );
       await client.query('COMMIT');
-      
+
       return res.status(400).json({
         success: false,
         message: `Invalid OTP. ${3 - (otpRecord.attempts + 1)} attempts remaining.`
@@ -591,7 +591,7 @@ app.get("/api/validate-token", authenticateToken, async (req, res) => {
 app.put("/api/user/profile", authenticateToken, async (req, res) => {
   try {
     const { name } = req.body;
-    
+
     if (!name || name.trim().length === 0) {
       return res.status(400).json({
         success: false,
@@ -635,19 +635,19 @@ app.put("/api/user/profile", authenticateToken, async (req, res) => {
 
 // Create anonymous complaint (no authentication required)
 app.post("/api/complaints/anonymous", async (req, res) => {
-  const { 
+  const {
     title,
-    category, 
-    description, 
-    location, 
-    attachments = [], 
+    category,
+    description,
+    location,
+    attachments = [],
     priority = 'medium',
     reporterType = 'anonymous',
     contactMethod = 'email',
     phone,
     aadhaarData
   } = req.body;
-  
+
   // Validation
   if (!title || !category || !description) {
     return res.status(400).json({
@@ -676,7 +676,7 @@ app.post("/api/complaints/anonymous", async (req, res) => {
     const timestamp = Date.now().toString().slice(-8); // Last 8 digits of timestamp
     const randomStr = Math.random().toString(36).substr(2, 4).toUpperCase(); // 4 char random
     const complaintId = `CMP${timestamp}${randomStr}`; // Format: CMP + 8 digits + 4 letters = 15 chars
-    
+
     console.log('Attempting to insert complaint with data:', {
       complaintId: `${complaintId} (length: ${complaintId.length})`,
       title: title?.trim(),
@@ -685,7 +685,7 @@ app.post("/api/complaints/anonymous", async (req, res) => {
       priority,
       location
     });
-    
+
     const result = await pool.query(
       `INSERT INTO complaints (
         complaint_id, title, category, description, priority, status, 
@@ -697,8 +697,8 @@ app.post("/api/complaints/anonymous", async (req, res) => {
       [
         complaintId,
         title.trim(),
-        category.trim(), 
-        description.trim(), 
+        category.trim(),
+        description.trim(),
         priority,
         'submitted',
         reporterType,
@@ -712,10 +712,10 @@ app.post("/api/complaints/anonymous", async (req, res) => {
         category // department based on category
       ]
     );
-    
+
     console.log('Complaint inserted successfully:', result.rows[0]);
-    
-    res.status(201).json({ 
+
+    res.status(201).json({
       success: true,
       message: 'Anonymous complaint submitted successfully',
       data: {
@@ -733,7 +733,7 @@ app.post("/api/complaints/anonymous", async (req, res) => {
       detail: error.detail,
       hint: error.hint
     });
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Failed to create complaint",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -743,19 +743,19 @@ app.post("/api/complaints/anonymous", async (req, res) => {
 
 // Create complaint (requires authentication)
 app.post("/api/complaints", authenticateToken, async (req, res) => {
-  const { 
+  const {
     title,
-    category, 
-    description, 
-    location, 
-    attachments = [], 
+    category,
+    description,
+    location,
+    attachments = [],
     priority = 'medium',
     reporterType = 'anonymous',
     contactMethod = 'email',
     phone,
     aadhaarData
   } = req.body;
-  
+
   // Validation
   if (!title || !category || !description) {
     return res.status(400).json({
@@ -784,7 +784,7 @@ app.post("/api/complaints", authenticateToken, async (req, res) => {
     const timestamp = Date.now().toString().slice(-8); // Last 8 digits of timestamp
     const randomStr = Math.random().toString(36).substr(2, 4).toUpperCase(); // 4 char random
     const complaintId = `CMP${timestamp}${randomStr}`; // Format: CMP + 8 digits + 4 letters = 15 chars
-    
+
     const result = await pool.query(
       `INSERT INTO complaints (
         complaint_id, title, category, description, priority, status, 
@@ -796,8 +796,8 @@ app.post("/api/complaints", authenticateToken, async (req, res) => {
       [
         complaintId,
         title.trim(),
-        category.trim(), 
-        description.trim(), 
+        category.trim(),
+        description.trim(),
         priority,
         'submitted',
         reporterType,
@@ -811,8 +811,8 @@ app.post("/api/complaints", authenticateToken, async (req, res) => {
         category // Default department to category
       ]
     );
-    
-    res.status(201).json({ 
+
+    res.status(201).json({
       success: true,
       message: 'Complaint submitted successfully',
       data: {
@@ -824,9 +824,9 @@ app.post("/api/complaints", authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to create complaint:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Failed to create complaint" 
+      message: "Failed to create complaint"
     });
   }
 });
@@ -857,7 +857,7 @@ app.get("/api/complaints/my", authenticateToken, async (req, res) => {
       `SELECT COUNT(*) FROM complaints ${whereClause}`,
       queryParams
     );
-    
+
     res.json({
       success: true,
       complaints: result.rows,
@@ -870,9 +870,9 @@ app.get("/api/complaints/my", authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to fetch complaints:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Failed to fetch complaints" 
+      message: "Failed to fetch complaints"
     });
   }
 });
@@ -881,7 +881,7 @@ app.get("/api/complaints/my", authenticateToken, async (req, res) => {
 app.get("/api/complaints/:id", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const result = await pool.query(
       `SELECT c.*, u.name as user_name 
        FROM complaints c 
@@ -889,23 +889,23 @@ app.get("/api/complaints/:id", authenticateToken, async (req, res) => {
        WHERE c.id = $1 AND c.user_id = $2`,
       [id, req.user.id]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Complaint not found"
       });
     }
-    
+
     res.json({
       success: true,
       complaint: result.rows[0]
     });
   } catch (error) {
     console.error("Failed to fetch complaint:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Failed to fetch complaint" 
+      message: "Failed to fetch complaint"
     });
   }
 });
@@ -926,16 +926,16 @@ app.get("/api/complaints/stats/my", authenticateToken, async (req, res) => {
       FROM complaints
       WHERE user_id = $1
     `, [req.user.id]);
-    
+
     res.json({
       success: true,
       stats: stats.rows[0]
     });
   } catch (error) {
     console.error("Failed to fetch stats:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: "Failed to fetch statistics" 
+      message: "Failed to fetch statistics"
     });
   }
 });
@@ -979,7 +979,7 @@ app.get("/api/health", async (req, res) => {
     const dbStart = Date.now();
     const result = await pool.query('SELECT NOW(), version()');
     const dbResponseTime = Date.now() - dbStart;
-    
+
     res.json({
       success: true,
       status: "healthy",

@@ -2,21 +2,21 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-  user: process.env.DB_USER || "postgres",
-  host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "civicsecure_db",
-  password: process.env.DB_PASSWORD || "123456",
-  port: process.env.DB_PORT || 5432,
+    user: process.env.DB_USER || "postgres",
+    host: process.env.DB_HOST || "localhost",
+    database: process.env.DB_NAME || "NaiyakSetu_db",
+    password: process.env.DB_PASSWORD || "123456",
+    port: process.env.DB_PORT || 5432,
 });
 
 async function checkDatabaseSchema() {
     console.log('Checking database schema...');
-    
+
     try {
         // Test connection
         const client = await pool.connect();
         console.log('✅ Database connection successful');
-        
+
         // Check if complaints table exists
         const tableExists = await client.query(`
             SELECT EXISTS (
@@ -25,9 +25,9 @@ async function checkDatabaseSchema() {
                 AND table_name = 'complaints'
             );
         `);
-        
+
         console.log('Complaints table exists:', tableExists.rows[0].exists);
-        
+
         if (tableExists.rows[0].exists) {
             // Get table schema
             const schema = await client.query(`
@@ -36,12 +36,12 @@ async function checkDatabaseSchema() {
                 WHERE table_name = 'complaints'
                 ORDER BY ordinal_position;
             `);
-            
+
             console.log('\nComplaints table schema:');
             schema.rows.forEach(row => {
                 console.log(`  ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`);
             });
-            
+
             // Test a simple insert to see what fails
             console.log('\nTesting a simple insert...');
             try {
@@ -70,13 +70,13 @@ async function checkDatabaseSchema() {
                     null,
                     'Test Category'
                 ]);
-                
+
                 console.log('✅ Test insert successful:', testResult.rows[0]);
-                
+
                 // Clean up test data
                 await client.query('DELETE FROM complaints WHERE complaint_id = $1', ['TEST-123']);
                 console.log('Test data cleaned up');
-                
+
             } catch (insertError) {
                 console.log('❌ Test insert failed:');
                 console.log('Error:', insertError.message);
@@ -84,7 +84,7 @@ async function checkDatabaseSchema() {
                 console.log('Code:', insertError.code);
             }
         }
-        
+
         client.release();
     } catch (error) {
         console.log('❌ Database check failed:');

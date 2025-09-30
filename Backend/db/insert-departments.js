@@ -10,13 +10,13 @@ const pool = new Pool({
 
 async function insertDepartments() {
   const client = await pool.connect();
-  
+
   try {
     const departments = [
-      ['Roads & Infrastructure', 'Handles road maintenance, potholes, and infrastructure issues', 'roads@civicsecure.gov', '+91-1234567801'],
-      ['Water Supply', 'Manages water supply, quality, and distribution issues', 'water@civicsecure.gov', '+91-1234567802'],
-      ['Electricity', 'Handles power outages, electrical faults, and billing issues', 'electricity@civicsecure.gov', '+91-1234567803'],
-      ['Sanitation & Waste', 'Manages garbage collection, waste disposal, and cleanliness', 'sanitation@civicsecure.gov', '+91-1234567804']
+      ['Roads & Infrastructure', 'Handles road maintenance, potholes, and infrastructure issues', 'roads@NaiyakSetu.gov', '+91-1234567801'],
+      ['Water Supply', 'Manages water supply, quality, and distribution issues', 'water@NaiyakSetu.gov', '+91-1234567802'],
+      ['Electricity', 'Handles power outages, electrical faults, and billing issues', 'electricity@NaiyakSetu.gov', '+91-1234567803'],
+      ['Sanitation & Waste', 'Manages garbage collection, waste disposal, and cleanliness', 'sanitation@NaiyakSetu.gov', '+91-1234567804']
     ];
 
     for (const [name, description, email, phone] of departments) {
@@ -27,10 +27,10 @@ async function insertDepartments() {
         console.log(`⚠️ ${name}: ${error.message}`);
       }
     }
-    
+
     const result = await client.query('SELECT COUNT(*) as count FROM departments');
     console.log(`\nTotal departments: ${result.rows[0].count}`);
-    
+
   } finally {
     client.release();
     await pool.end();

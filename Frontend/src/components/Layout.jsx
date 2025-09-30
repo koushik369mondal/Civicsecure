@@ -2,16 +2,16 @@ import React, { useEffect } from "react";
 import Sidebar from "./Sidebar";
 import { FaBars, FaTimes } from "react-icons/fa";
 
-export default function Layout({ 
-  children, 
-  sidebarOpen, 
-  setSidebarOpen, 
-  user, 
-  onLogout, 
-  currentPage, 
-  setCurrentPage 
+export default function Layout({
+  children,
+  sidebarOpen,
+  setSidebarOpen,
+  user,
+  onLogout,
+  currentPage,
+  setCurrentPage
 }) {
-  
+
   // Handle escape key to close sidebar
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -31,7 +31,7 @@ export default function Layout({
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -80,9 +80,9 @@ export default function Layout({
               <FaBars className="w-6 h-6" />
             )}
           </button>
-          
-          <h1 className="text-xl font-bold text-gray-900">CivicSecure</h1>
-          
+
+          <h1 className="text-xl font-bold text-gray-900">NaiyakSetu</h1>
+
           {/* Spacer for centering */}
           <div className="w-10" />
         </header>

@@ -26,7 +26,7 @@ function App() {
     const initializeApp = async () => {
       try {
         // Simulate authentication check
-        const savedUser = localStorage.getItem("civicSecureUser");
+        const savedUser = localStorage.getItem("NaiyakSetuUser");
         if (savedUser) {
           const userData = JSON.parse(savedUser);
           setUser(userData);
@@ -49,7 +49,7 @@ function App() {
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     setCurrentPage("dashboard");
-    localStorage.setItem("civicSecureUser", JSON.stringify(userData));
+    localStorage.setItem("NaiyakSetuUser", JSON.stringify(userData));
     
     // Welcome notification
     setNotifications(prev => [...prev, {
@@ -64,7 +64,7 @@ function App() {
     setUser(null);
     setCurrentPage("dashboard");
     setSidebarOpen(false);
-    localStorage.removeItem("civicSecureUser");
+    localStorage.removeItem("NaiyakSetuUser");
     
     // Clear any notifications
     setNotifications([]);
@@ -80,7 +80,7 @@ function App() {
   const updateUser = (updatedData) => {
     const updatedUser = { ...user, ...updatedData };
     setUser(updatedUser);
-    localStorage.setItem("civicSecureUser", JSON.stringify(updatedUser));
+    localStorage.setItem("NaiyakSetuUser", JSON.stringify(updatedUser));
   };
 
   // Common props passed to all page components
@@ -159,7 +159,7 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-green-800 mb-2">CivicSecure</h1>
+            <h1 className="text-4xl font-bold text-green-800 mb-2">NaiyakSetu</h1>
             <p className="text-green-600">Connecting Citizens with Solutions</p>
           </div>
           

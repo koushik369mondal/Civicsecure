@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FaEye, FaEyeSlash, FaUser, FaLock } from "react-icons/fa";
 
 const demoUsers = {
-  "civicsecure@gmail.com": { password: "123456", role: "admin", name: "Administrator" },
+  "NaiyakSetu@gmail.com": { password: "123456", role: "admin", name: "Administrator" },
   "customer@email.com": { password: "123456", role: "customer", name: "Customer User" },
 };
 
@@ -32,10 +32,10 @@ export default function Login({ onLoginSuccess }) {
       return;
     }
 
-    onLoginSuccess({ 
-      name: user.name, 
-      role: user.role, 
-      email: email.trim().toLowerCase() 
+    onLoginSuccess({
+      name: user.name,
+      role: user.role,
+      email: email.trim().toLowerCase()
     });
     setIsLoading(false);
   };
@@ -49,7 +49,7 @@ export default function Login({ onLoginSuccess }) {
             <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-xl">CS</span>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">CivicSecure</h1>
+            <h1 className="text-3xl font-bold text-gray-900">NaiyakSetu</h1>
           </div>
           <p className="text-gray-600">Sign in to your account to continue</p>
         </div>
@@ -145,7 +145,7 @@ export default function Login({ onLoginSuccess }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="font-medium text-gray-700">Admin</p>
-                <p className="text-gray-600">civicsecure@gmail.com</p>
+                <p className="text-gray-600">NaiyakSetu@gmail.com</p>
                 <p className="text-gray-600">123456</p>
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">

@@ -13,13 +13,13 @@ const pool = new Pool({
 
 async function setupDatabase() {
   const client = await pool.connect();
-  
+
   try {
     console.log('🔌 Connected to Supabase database');
-    
+
     // Create tables one by one
     console.log('📋 Creating tables...');
-    
+
     // 1. Users table
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -179,14 +179,14 @@ async function setupDatabase() {
     // Insert departments
     console.log('🏢 Inserting departments...');
     const departments = [
-      ['Roads & Infrastructure', 'Handles road maintenance, potholes, and infrastructure issues', 'roads@civicsecure.gov', '+91-1234567801'],
-      ['Water Supply', 'Manages water supply, quality, and distribution issues', 'water@civicsecure.gov', '+91-1234567802'],
-      ['Electricity', 'Handles power outages, electrical faults, and billing issues', 'electricity@civicsecure.gov', '+91-1234567803'],
-      ['Sanitation & Waste', 'Manages garbage collection, waste disposal, and cleanliness', 'sanitation@civicsecure.gov', '+91-1234567804'],
-      ['Public Safety', 'Handles safety concerns, security, and emergency services', 'safety@civicsecure.gov', '+91-1234567805'],
-      ['Traffic & Transportation', 'Manages traffic issues, public transport, and parking', 'traffic@civicsecure.gov', '+91-1234567806'],
-      ['Environment', 'Handles pollution, environmental concerns, and green initiatives', 'environment@civicsecure.gov', '+91-1234567807'],
-      ['Health Services', 'Manages public health facilities and medical services', 'health@civicsecure.gov', '+91-1234567808']
+      ['Roads & Infrastructure', 'Handles road maintenance, potholes, and infrastructure issues', 'roads@NaiyakSetu.gov', '+91-1234567801'],
+      ['Water Supply', 'Manages water supply, quality, and distribution issues', 'water@NaiyakSetu.gov', '+91-1234567802'],
+      ['Electricity', 'Handles power outages, electrical faults, and billing issues', 'electricity@NaiyakSetu.gov', '+91-1234567803'],
+      ['Sanitation & Waste', 'Manages garbage collection, waste disposal, and cleanliness', 'sanitation@NaiyakSetu.gov', '+91-1234567804'],
+      ['Public Safety', 'Handles safety concerns, security, and emergency services', 'safety@NaiyakSetu.gov', '+91-1234567805'],
+      ['Traffic & Transportation', 'Manages traffic issues, public transport, and parking', 'traffic@NaiyakSetu.gov', '+91-1234567806'],
+      ['Environment', 'Handles pollution, environmental concerns, and green initiatives', 'environment@NaiyakSetu.gov', '+91-1234567807'],
+      ['Health Services', 'Manages public health facilities and medical services', 'health@NaiyakSetu.gov', '+91-1234567808']
     ];
 
     for (const [name, description, email, phone] of departments) {
@@ -198,7 +198,7 @@ async function setupDatabase() {
     }
 
     console.log('✅ Database schema created successfully!');
-    
+
     // Test the setup by checking if tables exist
     const tablesQuery = `
       SELECT table_name 
@@ -207,20 +207,20 @@ async function setupDatabase() {
       AND table_name IN ('complaints', 'complaint_attachments', 'complaint_aadhaar_data', 'departments', 'users')
       ORDER BY table_name;
     `;
-    
+
     const result = await client.query(tablesQuery);
     console.log('\n📊 Created tables:');
     result.rows.forEach(row => {
       console.log(`  ✓ ${row.table_name}`);
     });
-    
+
     // Check departments
     const deptResult = await client.query('SELECT COUNT(*) as count FROM departments');
     console.log(`\n🏢 Departments inserted: ${deptResult.rows[0].count}`);
-    
+
     console.log('\n🎉 Database setup completed successfully!');
     console.log('\n📝 You can now submit complaints and they will be saved to the Supabase database!');
-    
+
   } catch (error) {
     console.error('❌ Error setting up database:', error.message);
     console.error('Stack trace:', error.stack);
@@ -247,14 +247,14 @@ async function testConnection() {
 
 // Main execution
 async function main() {
-  console.log('🚀 Starting CivicSecure Database Setup...\n');
-  
+  console.log('🚀 Starting NaiyakSetu Database Setup...\n');
+
   // Test connection first
   const isConnected = await testConnection();
   if (!isConnected) {
     process.exit(1);
   }
-  
+
   console.log('');
   await setupDatabase();
 }

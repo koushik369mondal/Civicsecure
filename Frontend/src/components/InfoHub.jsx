@@ -71,7 +71,7 @@ const infoCards = [
     {
         icon: FaBook,
         title: "User Guide",
-        description: "Step-by-step instructions on how to submit complaints, track status, and use all features of CivicSecure.",
+        description: "Step-by-step instructions on how to submit complaints, track status, and use all features of NaiyakSetu.",
         buttonText: "Read Guide",
         color: "bg-blue-50 text-blue-600",
     },
@@ -427,8 +427,8 @@ function InfoHub() {
                                         {scheme.source && (
                                             <div className="absolute top-2 right-2">
                                                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${scheme.source === 'Government RSS Feed'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-gray-100 text-gray-600'
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-gray-100 text-gray-600'
                                                     }`}>
                                                     {scheme.source === 'Government RSS Feed'
                                                         ? '🔴 Live'
@@ -486,8 +486,8 @@ function InfoHub() {
                                     key={category}
                                     onClick={() => setSelectedCategory(category)}
                                     className={`px-4 py-2 rounded-full text-sm font-medium transition ${active
-                                            ? "bg-green-600 text-white shadow-sm"
-                                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        ? "bg-green-600 text-white shadow-sm"
+                                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                         }`}
                                 >
                                     {category}
@@ -637,7 +637,7 @@ function InfoHub() {
                             </div>
                             <div>
                                 <h3 className="font-semibold text-gray-900">Email Support</h3>
-                                <p className="text-gray-600 text-sm">support@civicsecure.gov.in</p>
+                                <p className="text-gray-600 text-sm">support@NaiyakSetu.gov.in</p>
                                 <p className="text-gray-500 text-xs">Response within 24 hours</p>
                             </div>
                         </div>

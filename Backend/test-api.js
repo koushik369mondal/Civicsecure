@@ -13,7 +13,7 @@ app.post('/api/complaints', createComplaint);
 // Test data
 const testComplaintData = {
   title: 'Street Light Not Working',
-  category: 'Electricity', 
+  category: 'Electricity',
   description: 'The street light on Main Street has been not working for 3 days.',
   priority: 'high',
   reporterType: 'anonymous',
@@ -31,12 +31,12 @@ const testComplaintData = {
 const port = 3001;
 const server = app.listen(port, () => {
   console.log(`🚀 Test server running on http://localhost:${port}`);
-  
+
   // Test the endpoint
   setTimeout(async () => {
     try {
       console.log('\n🧪 Testing complaint creation endpoint...\n');
-      
+
       const response = await fetch(`http://localhost:${port}/api/complaints`, {
         method: 'POST',
         headers: {
@@ -44,9 +44,9 @@ const server = app.listen(port, () => {
         },
         body: JSON.stringify(testComplaintData)
       });
-      
+
       const result = await response.json();
-      
+
       if (response.ok) {
         console.log('✅ SUCCESS! Complaint created successfully:');
         console.log(`   Complaint ID: ${result.data.complaintId}`);
@@ -54,31 +54,31 @@ const server = app.listen(port, () => {
         console.log(`   Status: ${result.data.status}`);
         console.log(`   Created At: ${result.data.createdAt}`);
         console.log(`   Message: ${result.message}\n`);
-        
+
         console.log('🎉 BACKEND INTEGRATION COMPLETE!');
-        console.log('📝 Your CivicSecure application can now:');
+        console.log('📝 Your NaiyakSetu application can now:');
         console.log('   ✓ Accept complaint submissions from the frontend');
         console.log('   ✓ Store complaint data in Supabase database');
-        console.log('   ✓ Handle location data with Mapbox coordinates');  
+        console.log('   ✓ Handle location data with Mapbox coordinates');
         console.log('   ✓ Support different reporter types and priorities');
         console.log('   ✓ Track complaint status and history');
         console.log('   ✓ Generate unique complaint tracking numbers\n');
-        
+
         console.log('🔗 Next steps:');
         console.log('   1. Connect your frontend ComplaintForm to POST /api/complaints');
         console.log('   2. Display the tracking number to users after submission');
         console.log('   3. Implement complaint status tracking and updates');
         console.log('   4. Add file upload functionality for attachments');
-        
+
       } else {
         console.log('❌ ERROR:', response.status, response.statusText);
         console.log('   Response:', result);
       }
-      
+
     } catch (error) {
       console.error('❌ Test failed:', error.message);
     }
-    
+
     server.close();
     process.exit(0);
   }, 1000);
