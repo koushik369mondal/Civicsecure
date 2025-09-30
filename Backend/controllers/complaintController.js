@@ -414,9 +414,88 @@ const getUserComplaintStats = async (req, res) => {
   }
 };
 
+// Update complaint status (Admin only)
+const updateComplaintStatus = async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    const { id } = req.params;
+    const { status, notes } = req.body;
+    
+    // Validate status
+    const validStatuses = ['submitted', 'in_progress', 'resolved', 'closed'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid status. Must be one of: ' + validStatuses.join(', ')
+      });
+    }
+    
+    await client.query('BEGIN');
+    
+    // Update complaint status
+    const updateQuery = `
+      UPDATE complaints 
+      SET status = $1, updated_at = NOW()
+      WHERE complaint_id = $2 OR id = $2
+      RETURNING id, complaint_id, status, updated_at
+    `;
+    
+    const result = await client.query(updateQuery, [status, id]);
+    
+    if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({
+        success: false,
+        message: 'Complaint not found'
+      });
+    }
+    
+    const updatedComplaint = result.rows[0];
+    
+    // Add status history entry
+    const historyQuery = `
+      INSERT INTO complaint_status_history (
+        complaint_id, status, notes, changed_by, changed_at
+      ) VALUES ($1, $2, $3, $4, NOW())
+    `;
+    
+    await client.query(historyQuery, [
+      updatedComplaint.id,
+      status,
+      notes || `Status changed to ${status}`,
+      req.user?.id || null
+    ]);
+    
+    await client.query('COMMIT');
+    
+    res.json({
+      success: true,
+      message: 'Complaint status updated successfully',
+      data: {
+        complaintId: updatedComplaint.complaint_id,
+        status: updatedComplaint.status,
+        updatedAt: updatedComplaint.updated_at
+      }
+    });
+    
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error updating complaint status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update complaint status',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   createComplaint,
   getUserComplaints,
   getComplaintById,
+  updateComplaintStatus,
   getUserComplaintStats
 };

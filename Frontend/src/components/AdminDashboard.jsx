@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaExclamationTriangle, FaCheckCircle, FaClock, FaUsers, FaFileAlt, FaChartLine, FaSpinner } from "react-icons/fa";
+import { FaExclamationTriangle, FaCheckCircle, FaClock, FaUsers, FaFileAlt, FaChartLine, FaSpinner, FaTimes, FaSave } from "react-icons/fa";
 import { complaintAPI } from "../services/api";
 
 export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLogout, currentPage, setCurrentPage }) {
@@ -13,6 +13,16 @@ export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLo
   const [recentComplaints, setRecentComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Modal states
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [editForm, setEditForm] = useState({
+    status: '',
+    notes: ''
+  });
+  const [updateLoading, setUpdateLoading] = useState(false);
 
   useEffect(() => {
     fetchAdminDashboardData();
@@ -100,13 +110,19 @@ export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLo
 
       setStats(updatedStats);
 
-      // Format recent complaints data
+      // Format recent complaints data - store more complete data
       const formattedComplaints = complaintsData.map(complaint => ({
         id: complaint.complaint_id,
+        complaintId: complaint.complaint_id,
         category: complaint.category,
         status: formatStatus(complaint.status),
+        rawStatus: complaint.status, // Keep raw status for editing
         date: new Date(complaint.created_at).toLocaleDateString('en-CA'),
-        priority: complaint.priority || 'Medium' // Default priority if not set
+        priority: complaint.priority || 'Medium', // Default priority if not set
+        title: complaint.title || 'N/A',
+        description: complaint.description || 'N/A',
+        createdAt: complaint.created_at,
+        locationAddress: complaint.location_address || 'Not specified'
       }));
 
       setRecentComplaints(formattedComplaints);
@@ -131,6 +147,143 @@ export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLo
       default:
         return status;
     }
+  };
+
+  // Handle viewing complaint details
+  const handleView = async (complaintId) => {
+    try {
+      // First try to find the complaint in our local data
+      const localComplaint = recentComplaints.find(c => c.id === complaintId || c.complaintId === complaintId);
+      
+      if (localComplaint) {
+        console.log('Using local complaint data for viewing:', localComplaint);
+        // Use local data directly
+        const complaint = {
+          complaint_id: localComplaint.id,
+          title: localComplaint.title,
+          category: localComplaint.category,
+          status: localComplaint.rawStatus || localComplaint.status.toLowerCase().replace(' ', '_'),
+          priority: localComplaint.priority,
+          description: localComplaint.description,
+          location_address: localComplaint.locationAddress,
+          created_at: localComplaint.createdAt
+        };
+        
+        setSelectedComplaint(complaint);
+        setShowViewModal(true);
+        return;
+      }
+      
+      // Fallback to public tracking API
+      console.log('Attempting to fetch complaint details via public API for ID:', complaintId);
+      const response = await complaintAPI.trackComplaint(complaintId);
+      console.log('Public API response:', response);
+      
+      if (response.data && response.data.complaint) {
+        setSelectedComplaint(response.data.complaint);
+        setShowViewModal(true);
+      } else {
+        throw new Error('Complaint not found');
+      }
+    } catch (error) {
+      console.error('Error fetching complaint details:', error);
+      setError(`Failed to load complaint details: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  // Handle editing complaint
+  const handleEdit = async (complaintId) => {
+    try {
+      // First try to find the complaint in our local data
+      const localComplaint = recentComplaints.find(c => c.id === complaintId || c.complaintId === complaintId);
+      
+      if (localComplaint) {
+        console.log('Using local complaint data for editing:', localComplaint);
+        // Use local data directly
+        const complaint = {
+          complaint_id: localComplaint.id,
+          title: localComplaint.title,
+          category: localComplaint.category,
+          status: localComplaint.rawStatus || localComplaint.status.toLowerCase().replace(' ', '_'),
+          priority: localComplaint.priority,
+          description: localComplaint.description,
+          location_address: localComplaint.locationAddress,
+          created_at: localComplaint.createdAt
+        };
+        
+        setSelectedComplaint(complaint);
+        setEditForm({
+          status: complaint.status === 'submitted' ? 'submitted' : 
+                 complaint.status === 'in_progress' ? 'in_progress' :
+                 complaint.status === 'resolved' ? 'resolved' :
+                 complaint.status === 'closed' ? 'closed' : 'submitted',
+          notes: ''
+        });
+        setShowEditModal(true);
+        return;
+      }
+      
+      // Fallback to public tracking API if not found locally
+      console.log('Attempting to fetch complaint details for editing via public API, ID:', complaintId);
+      const response = await complaintAPI.trackComplaint(complaintId);
+      console.log('Public API response for edit:', response);
+      
+      if (response.data && response.data.complaint) {
+        const complaint = response.data.complaint;
+        setSelectedComplaint(complaint);
+        setEditForm({
+          status: complaint.status === 'submitted' ? 'submitted' : 
+                 complaint.status === 'in_progress' ? 'in_progress' :
+                 complaint.status === 'resolved' ? 'resolved' :
+                 complaint.status === 'closed' ? 'closed' : 'submitted',
+          notes: ''
+        });
+        setShowEditModal(true);
+      } else {
+        throw new Error('Complaint not found');
+      }
+    } catch (error) {
+      console.error('Error fetching complaint details for edit:', error);
+      setError(`Failed to load complaint details: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  // Handle status update
+  const handleStatusUpdate = async () => {
+    if (!selectedComplaint) return;
+    
+    setUpdateLoading(true);
+    try {
+      await complaintAPI.updateComplaintStatus(selectedComplaint.complaint_id, {
+        status: editForm.status,
+        notes: editForm.notes
+      });
+      
+      // Refresh dashboard data
+      await fetchAdminDashboardData();
+      
+      // Close modal
+      setShowEditModal(false);
+      setSelectedComplaint(null);
+      setEditForm({ status: '', notes: '' });
+      
+      // Show success message
+      setError(null);
+      
+    } catch (error) {
+      console.error('Error updating complaint status:', error);
+      setError('Failed to update complaint status');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
+  // Close modals
+  const closeModals = () => {
+    setShowViewModal(false);
+    setShowEditModal(false);
+    setSelectedComplaint(null);
+    setEditForm({ status: '', notes: '' });
   };
 
   const getStatusColor = (status) => {
@@ -290,10 +443,16 @@ export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLo
                       {date}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button className="text-green-600 hover:text-green-800 font-medium mr-3">
+                      <button 
+                        onClick={() => handleView(id)}
+                        className="text-green-600 hover:text-green-800 font-medium mr-3"
+                      >
                         View
                       </button>
-                      <button className="text-blue-600 hover:text-blue-800 font-medium">
+                      <button 
+                        onClick={() => handleEdit(id)}
+                        className="text-blue-600 hover:text-blue-800 font-medium"
+                      >
                         Edit
                       </button>
                     </td>
@@ -367,6 +526,151 @@ export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLo
           </div>
         </div>
       </div>
+
+      {/* View Modal */}
+      {showViewModal && selectedComplaint && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Complaint Details</h3>
+              <button
+                onClick={closeModals}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Complaint ID</label>
+                <p className="text-gray-900">{selectedComplaint.complaint_id}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Title</label>
+                <p className="text-gray-900">{selectedComplaint.title}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Category</label>
+                <p className="text-gray-900 capitalize">{selectedComplaint.category}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <p className="text-gray-900">{selectedComplaint.description}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(formatStatus(selectedComplaint.status))}`}>
+                    {formatStatus(selectedComplaint.status)}
+                  </span>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Priority</label>
+                  <span className={`font-medium capitalize ${getPriorityColor(selectedComplaint.priority)}`}>
+                    {selectedComplaint.priority}
+                  </span>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Location</label>
+                <p className="text-gray-900">{selectedComplaint.location_address || 'Not specified'}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Created At</label>
+                <p className="text-gray-900">{new Date(selectedComplaint.created_at).toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && selectedComplaint && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Edit Complaint</h3>
+              <button
+                onClick={closeModals}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Complaint ID</label>
+                <p className="text-gray-900">{selectedComplaint.complaint_id}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Title</label>
+                <p className="text-gray-900">{selectedComplaint.title}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="submitted">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="Add notes about this status change..."
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={closeModals}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleStatusUpdate}
+                  disabled={updateLoading}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded-md transition-colors flex items-center"
+                >
+                  {updateLoading ? (
+                    <>
+                      <FaSpinner className="animate-spin mr-2" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <FaSave className="mr-2" />
+                      Update Status
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

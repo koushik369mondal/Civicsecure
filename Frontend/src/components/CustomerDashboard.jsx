@@ -6,6 +6,7 @@ import {
   FaBell,
   FaCheckCircle,
   FaSpinner,
+  FaSync,
 } from "react-icons/fa";
 import { complaintAPI } from "../services/api";
 
@@ -29,6 +30,13 @@ export default function CustomerDashboard({
 
   useEffect(() => {
     fetchDashboardData();
+    
+    // Set up auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchDashboardData = async () => {
@@ -174,6 +182,16 @@ export default function CustomerDashboard({
           </div>
 
           <div className="flex items-center space-x-3">
+            <button
+              onClick={fetchDashboardData}
+              disabled={loading}
+              className="flex items-center bg-white bg-opacity-20 px-3 py-2 rounded-lg hover:bg-opacity-30 transition-all"
+            >
+              <FaSync className={`mr-2 text-black ${loading ? 'animate-spin' : ''}`} />
+              <span className="text-sm text-black font-medium">
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </span>
+            </button>
             <div className="flex items-center bg-white bg-opacity-20 px-4 py-2 rounded-lg">
               <FaBell className="mr-2 animate-pulse text-black" />
               <span className="text-sm text-black font-medium">

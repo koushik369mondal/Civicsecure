@@ -88,6 +88,9 @@ export const complaintAPI = {
     getComplaintById: (id) =>
         api.get(`/complaints/${id}`),
 
+    updateComplaintStatus: (id, statusData) =>
+        api.put(`/complaints/${id}/status`, statusData),
+
     getUserComplaintStats: () =>
         api.get('/complaints/stats/my'),
     
