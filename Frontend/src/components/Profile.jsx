@@ -35,15 +35,15 @@ const useFormValidation = () => {
     let isValid = false;
 
     switch (field) {
-      case 'username':
+      case 'fullName':
         if (!value.trim()) {
-          error = 'Username is required';
-        } else if (value.length < 3) {
-          error = 'Username must be at least 3 characters';
-        } else if (value.length > 20) {
-          error = 'Username must be less than 20 characters';
-        } else if (!/^[a-zA-Z0-9_]+$/.test(value)) {
-          error = 'Only letters, numbers, and underscores allowed';
+          error = 'Full name is required';
+        } else if (value.trim().length < 2) {
+          error = 'Full name must be at least 2 characters';
+        } else if (value.trim().length > 50) {
+          error = 'Full name must be less than 50 characters';
+        } else if (!/^[a-zA-Z\s'-]+$/.test(value.trim())) {
+          error = 'Full name can only contain letters, spaces, hyphens, and apostrophes';
         } else {
           isValid = true;
         }
@@ -493,7 +493,7 @@ const ProfileStats = ({ profileCompletion, totalFields, completedFields, verific
 export default function Profile({ setCurrentPage }) {
   // Form state
   const [formData, setFormData] = useState({
-    username: "",
+    fullName: "",
     email: "",
     phone: "",
     aadhaar: ""
@@ -520,7 +520,7 @@ export default function Profile({ setCurrentPage }) {
 
   // Calculate profile completion percentage - Dashboard style
   const profileCompletion = useMemo(() => {
-    const fields = ['username', 'email', 'phone', 'aadhaar'];
+    const fields = ['fullName', 'email', 'phone', 'aadhaar'];
     const filledFields = fields.filter(field => formData[field].trim() !== '').length;
     const photoBonus = profilePhoto ? 1 : 0;
     const verificationBonus = aadhaarVerified ? 1 : 0;
@@ -541,6 +541,7 @@ export default function Profile({ setCurrentPage }) {
 
   const loadProfileData = useCallback(() => {
     try {
+      // First, check for stored profile data
       const storedProfile = localStorage.getItem(PROFILE_STORAGE_KEY);
       if (storedProfile) {
         const profileData = JSON.parse(storedProfile);
@@ -549,16 +550,19 @@ export default function Profile({ setCurrentPage }) {
 
         if (now - profileTime < PROFILE_DURATION) {
           setFormData({
-            username: profileData.username || '',
+            fullName: profileData.fullName || profileData.username || '',
             email: profileData.email || '',
             phone: profileData.phone || '',
             aadhaar: profileData.aadhaar || ''
           });
           setProfilePhoto(profileData.profilePhoto || null);
+          return; // Exit early if we have valid stored data
         } else {
           localStorage.removeItem(PROFILE_STORAGE_KEY);
         }
       }
+
+      // Removed auto-population from user credentials to keep profile section empty by default
     } catch (error) {
       console.error('Error loading profile data:', error);
       localStorage.removeItem(PROFILE_STORAGE_KEY);
@@ -748,18 +752,18 @@ export default function Profile({ setCurrentPage }) {
               {/* Form Fields Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <FormField
-                  label="Username"
-                  value={formData.username}
-                  onChange={(e) => handleFieldChange('username', e.target.value)}
-                  onBlur={(e) => handleFieldBlur('username', e.target.value)}
-                  error={errors.username}
-                  touched={touched.username}
-                  valid={validFields.username}
-                  placeholder="Enter your unique username"
-                  maxLength={20}
+                  label="Full Name"
+                  value={formData.fullName}
+                  onChange={(e) => handleFieldChange('fullName', e.target.value)}
+                  onBlur={(e) => handleFieldBlur('fullName', e.target.value)}
+                  error={errors.fullName}
+                  touched={touched.fullName}
+                  valid={validFields.fullName}
+                  placeholder="Enter your full name"
+                  maxLength={50}
                   icon={FaUser}
                   disabled={loading}
-                  helpText="3-20 characters, letters, numbers, and underscores only"
+                  helpText="Your complete name as it appears on official documents"
                 />
 
                 <FormField
