@@ -51,12 +51,33 @@ function App() {
     setCurrentPage("dashboard");
     localStorage.setItem("NaiyakSetuUser", JSON.stringify(userData));
     
-    // Welcome notification
-    setNotifications(prev => [...prev, {
+    // Welcome notification with auto-dismiss
+    const welcomeNotification = {
       id: Date.now(),
       message: `Welcome back, ${userData.name}!`,
-      type: "success"
-    }]);
+      type: "success",
+      isVisible: true
+    };
+    
+    setNotifications(prev => [...prev, welcomeNotification]);
+    
+    // Auto-dismiss after 3 seconds with fade-out
+    setTimeout(() => {
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === welcomeNotification.id 
+            ? { ...notif, isVisible: false }
+            : notif
+        )
+      );
+      
+      // Remove from DOM after fade-out animation completes
+      setTimeout(() => {
+        setNotifications(prev => 
+          prev.filter(notif => notif.id !== welcomeNotification.id)
+        );
+      }, 300); // 300ms for fade-out transition
+    }, 3000); // 3 seconds display time
   };
 
   // Handle user logout
@@ -195,10 +216,16 @@ function App() {
             <div
               key={notification.id}
               className={`px-4 py-3 rounded-lg shadow-lg text-white max-w-sm transform transition-all duration-300 ${
+                notification.isVisible === false ? 'opacity-0' : 'opacity-100'
+              } ${
                 notification.type === 'success' ? 'bg-green-600' :
                 notification.type === 'error' ? 'bg-red-600' :
                 notification.type === 'warning' ? 'bg-yellow-600' : 'bg-blue-600'
               }`}
+              style={{
+                transition: 'opacity 0.3s ease-in-out',
+                display: notification.isVisible === false && notification.fadeComplete ? 'none' : 'block'
+              }}
             >
               <p className="text-sm">{notification.message}</p>
             </div>

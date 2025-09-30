@@ -158,7 +158,7 @@ export default function CustomerDashboard({
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* Welcome Header */}
+      {/* Dashboard Header */}
       <div className="bg-green-800 rounded-xl shadow-lg p-6 lg:p-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="mb-4 lg:mb-0">
@@ -166,7 +166,7 @@ export default function CustomerDashboard({
               className="text-3xl lg:text-4xl font-bold mb-2"
               style={{ color: "#ffffff" }}
             >
-              Welcome back, {user?.name}! 🏠
+              Dashboard 🏠
             </h1>
             <p className="text-lg" style={{ color: "#ffffff" }}>
               Let's make your community better together

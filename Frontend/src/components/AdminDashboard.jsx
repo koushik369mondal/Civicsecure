@@ -164,7 +164,7 @@ export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLo
               Admin Dashboard
             </h1>
             <p className="text-lg" style={{ color: "#ffffff" }}>
-              Welcome back, {user?.name}! Here's your system overview.
+              Here's your system overview.
             </p>
           </div>
           <div className="flex items-center space-x-3">
