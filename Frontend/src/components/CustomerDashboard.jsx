@@ -1,11 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaFileAlt,
   FaSearch,
   FaUser,
   FaBell,
   FaCheckCircle,
+  FaSpinner,
 } from "react-icons/fa";
+import { complaintAPI } from "../services/api";
 
 export default function CustomerDashboard({
   user,
@@ -15,26 +17,107 @@ export default function CustomerDashboard({
   onLogout,
   setCurrentPage,
 }) {
-  const [complaints, setComplaints] = useState([
-    {
-      id: 1,
-      title: "Broken streetlight",
-      status: "Pending",
-      date: "2025-09-12",
-    },
-    {
-      id: 2,
-      title: "Pothole on Main Road",
-      status: "Resolved",
-      date: "2025-09-10",
-    },
-    {
-      id: 3,
-      title: "Water supply issue",
-      status: "In Progress",
-      date: "2025-09-11",
-    },
-  ]);
+  const [complaints, setComplaints] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    resolved: 0,
+    inProgress: 0,
+    pending: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      let statsData = null;
+      let complaintsData = [];
+
+      // Try authenticated endpoints first, fall back to public endpoints
+      try {
+        // Try to fetch user-specific stats
+        const statsResponse = await complaintAPI.getUserComplaintStats();
+        statsData = statsResponse.data.data;
+        
+        // Try to fetch user-specific complaints
+        const complaintsResponse = await complaintAPI.getUserComplaints({ limit: 5, sort: 'created_at', order: 'DESC' });
+        complaintsData = complaintsResponse.data.data;
+        
+      } catch (authError) {
+        console.log('Authentication failed, falling back to public endpoints:', authError);
+        
+        // Fallback to public endpoints
+        try {
+          // Use public stats endpoint
+          const publicStatsResponse = await complaintAPI.getComplaintStats();
+          const publicStats = publicStatsResponse.data.stats;
+          
+          // Convert public stats format to match user stats format
+          statsData = {
+            totalComplaints: publicStats.total,
+            statusCounts: {
+              submitted: publicStats.status.pending,
+              inProgress: publicStats.status.in_progress,
+              resolved: publicStats.status.resolved,
+              closed: publicStats.status.closed
+            }
+          };
+          
+          // Use public recent complaints endpoint
+          const publicComplaintsResponse = await complaintAPI.getRecentComplaints({ limit: 5 });
+          complaintsData = publicComplaintsResponse.data.complaints || [];
+          
+        } catch (publicError) {
+          console.error('Both authenticated and public endpoints failed:', publicError);
+          throw new Error('Unable to fetch data from any endpoint');
+        }
+      }
+
+      // Update stats
+      setStats({
+        total: statsData.totalComplaints,
+        resolved: statsData.statusCounts.resolved + statsData.statusCounts.closed,
+        inProgress: statsData.statusCounts.inProgress,
+        pending: statsData.statusCounts.submitted
+      });
+
+      // Format complaints data
+      const formattedComplaints = complaintsData.map(complaint => ({
+        id: complaint.complaint_id,
+        title: complaint.title,
+        status: formatStatus(complaint.status),
+        date: new Date(complaint.created_at).toLocaleDateString('en-CA')
+      }));
+
+      setComplaints(formattedComplaints);
+
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatStatus = (status) => {
+    switch (status) {
+      case 'submitted':
+        return 'Pending';
+      case 'in_progress':
+        return 'In Progress';
+      case 'resolved':
+      case 'closed':
+        return 'Resolved';
+      default:
+        return status;
+    }
+  };
 
   const quickActions = [
     {
@@ -101,30 +184,51 @@ export default function CustomerDashboard({
         </div>
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          <p>{error}</p>
+          <button 
+            onClick={fetchDashboardData}
+            className="mt-2 text-red-600 hover:text-red-800 underline text-sm"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <FaSpinner className="animate-spin text-green-600 text-2xl mr-3" />
+          <span className="text-gray-600">Loading dashboard data...</span>
+        </div>
+      )}
+
       {/* Stats Overview */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             label: "Total Complaints",
-            value: complaints.length,
+            value: stats.total,
             color: "text-blue-600",
             bgColor: "bg-blue-50",
           },
           {
             label: "Resolved",
-            value: complaints.filter((c) => c.status === "Resolved").length,
+            value: stats.resolved,
             color: "text-green-600",
             bgColor: "bg-green-50",
           },
           {
             label: "In Progress",
-            value: complaints.filter((c) => c.status === "In Progress").length,
+            value: stats.inProgress,
             color: "text-blue-600",
             bgColor: "bg-blue-50",
           },
           {
             label: "Pending",
-            value: complaints.filter((c) => c.status === "Pending").length,
+            value: stats.pending,
             color: "text-yellow-600",
             bgColor: "bg-yellow-50",
           },
@@ -136,7 +240,7 @@ export default function CustomerDashboard({
             <div
               className={`w-12 h-12 ${bgColor} rounded-lg flex items-center justify-center mb-3`}
             >
-              <span className={`text-xl font-bold ${color}`}>{value}</span>
+              <span className={`text-xl font-bold ${color}`}>{loading ? '-' : value}</span>
             </div>
             <p className="text-sm font-medium text-gray-600">{label}</p>
           </div>
@@ -185,7 +289,7 @@ export default function CustomerDashboard({
           </button>
         </div>
 
-        {complaints.length === 0 ? (
+        {complaints.length === 0 && !loading ? (
           <div className="text-center py-8">
             <FaFileAlt className="mx-auto text-4xl text-gray-300 mb-4" />
             <p className="text-gray-500">No complaints filed yet</p>
@@ -223,7 +327,7 @@ export default function CustomerDashboard({
       </div>
 
       {/* Help Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 border-l-4 border-green-500">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 border-l-4 border-l-green-500">
         <div className="flex items-start">
           <FaCheckCircle className="text-green-500 text-xl mt-1 mr-4 flex-shrink-0" />
           <div>

@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { FaEye, FaEyeSlash, FaUser, FaLock } from "react-icons/fa";
 
 const demoUsers = {
-  "NaiyakSetu@gmail.com": { password: "123456", role: "admin", name: "Administrator" },
+  "naiyakeetu@gmail.com": { password: "123456", role: "admin", name: "Administrator" },
+  "naiyaksetu@gmail.com": { password: "123456", role: "admin", name: "Administrator" }, // Alternative spelling
   "customer@email.com": { password: "123456", role: "customer", name: "Customer User" },
 };
 
@@ -145,7 +146,7 @@ export default function Login({ onLoginSuccess }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="font-medium text-gray-700">Admin</p>
-                <p className="text-gray-600">NaiyakSetu@gmail.com</p>
+                <p className="text-gray-600">naiyakeetu@gmail.com</p>
                 <p className="text-gray-600">123456</p>
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
