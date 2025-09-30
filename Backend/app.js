@@ -3,7 +3,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
-const { Pool } = require("pg");
+const pool = require('./db'); // Use centralized database connection
 require("dotenv").config();
 
 // Import route modules
@@ -29,29 +29,6 @@ app.use((req, res, next) => {
 });
 
 app.use(express.urlencoded({ extended: true }));
-
-// PostgreSQL pool setup with optimized configuration
-const pool = new Pool({
-  user: process.env.DB_USER || "postgres",
-  host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "NaiyakSetu_db",
-  password: process.env.DB_PASSWORD || "123456",
-  port: process.env.DB_PORT || 5432,
-  max: 20, // maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // close idle clients after 30 seconds
-  connectionTimeoutMillis: 2000, // return an error after 2 seconds if connection could not be established
-  acquireTimeoutMillis: 60000, // return an error after 60 seconds if acquiring a connection times out
-});
-
-// Test database connection
-pool.connect((err, client, release) => {
-  if (err) {
-    console.error('❌ Error connecting to PostgreSQL:', err);
-  } else {
-    console.log('✅ Connected to PostgreSQL database');
-    release();
-  }
-});
 
 // Enhanced rate limiting configurations
 const otpLimiter = rateLimit({

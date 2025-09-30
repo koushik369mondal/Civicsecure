@@ -16,9 +16,9 @@ const pool = new Pool({
 // Test database connection
 pool.connect((err, client, release) => {
   if (err) {
-    console.error('❌ Error connecting to PostgreSQL:', err);
+    console.error('❌ Error connecting to Supabase database:', err);
   } else {
-    console.log('✅ Connected to PostgreSQL database');
+    console.log('✅ Connected to Supabase database');
     release();
   }
 });
