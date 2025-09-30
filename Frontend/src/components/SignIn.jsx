@@ -38,6 +38,17 @@ export default function SignIn({ onLoginSuccess, onSwitchToSignUp }) {
           is_verified: true
         };
         
+        // Create a demo JWT token for API calls
+        const demoToken = btoa(JSON.stringify({
+          user: userData,
+          exp: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+          iat: Date.now(),
+          demo: true
+        }));
+        
+        // Store token for API calls
+        localStorage.setItem('token', demoToken);
+        
         onLoginSuccess(userData);
         setIsLoading(false);
         return;

@@ -367,23 +367,39 @@ const getUserComplaintStats = async (req, res) => {
   try {
     const userId = req.user?.id;
     
-    const statsQuery = `
-      SELECT 
-        COUNT(*) as total_complaints,
-        COUNT(CASE WHEN status = 'submitted' THEN 1 END) as submitted_count,
-        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress_count,
-        COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved_count,
-        COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed_count,
-        COUNT(CASE WHEN priority = 'urgent' THEN 1 END) as urgent_count,
-        COUNT(CASE WHEN priority = 'high' THEN 1 END) as high_priority_count,
-        AVG(CASE WHEN resolved_at IS NOT NULL THEN 
-          EXTRACT(EPOCH FROM (resolved_at - created_at))/86400 
-        END) as avg_resolution_days
-      FROM complaints 
-      WHERE user_id = $1 OR $1 IS NULL
-    `;
-    
-    const result = await pool.query(statsQuery, [userId]);
+    // For demo users, return sample stats instead of querying with invalid UUID
+    if (userId && (userId.startsWith('demo-') || !userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))) {
+      const result = {
+        rows: [{
+          total_complaints: '5',
+          submitted_count: '1',
+          in_progress_count: '2',
+          resolved_count: '1',
+          closed_count: '1',
+          urgent_count: '1',
+          high_priority_count: '1',
+          avg_resolution_days: '3.5'
+        }]
+      };
+    } else {
+      const statsQuery = `
+        SELECT 
+          COUNT(*) as total_complaints,
+          COUNT(CASE WHEN status = 'submitted' THEN 1 END) as submitted_count,
+          COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress_count,
+          COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved_count,
+          COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed_count,
+          COUNT(CASE WHEN priority = 'urgent' THEN 1 END) as urgent_count,
+          COUNT(CASE WHEN priority = 'high' THEN 1 END) as high_priority_count,
+          AVG(CASE WHEN resolved_at IS NOT NULL THEN 
+            EXTRACT(EPOCH FROM (resolved_at - created_at))/86400 
+          END) as avg_resolution_days
+        FROM complaints 
+        WHERE user_id = $1 OR $1 IS NULL
+      `;
+      
+      var result = await pool.query(statsQuery, [userId]);
+    }
     const stats = result.rows[0];
     
     res.json({
@@ -437,10 +453,10 @@ const updateComplaintStatus = async (req, res) => {
     const updateQuery = `
       UPDATE complaints 
       SET status = $1, updated_at = NOW()
-      WHERE complaint_id = $2 OR id = $2
+      WHERE complaint_id = $2
       RETURNING id, complaint_id, status, updated_at
     `;
-    
+
     const result = await client.query(updateQuery, [status, id]);
     
     if (result.rows.length === 0) {
@@ -453,19 +469,24 @@ const updateComplaintStatus = async (req, res) => {
     
     const updatedComplaint = result.rows[0];
     
-    // Add status history entry
-    const historyQuery = `
-      INSERT INTO complaint_status_history (
-        complaint_id, status, notes, changed_by, changed_at
-      ) VALUES ($1, $2, $3, $4, NOW())
-    `;
+    // Add status history entry (skip for demo users to avoid UUID errors)
+    const userId = req.user?.id;
+    const isValidUuid = userId && userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
     
-    await client.query(historyQuery, [
-      updatedComplaint.id,
-      status,
-      notes || `Status changed to ${status}`,
-      req.user?.id || null
-    ]);
+    if (isValidUuid) {
+      const historyQuery = `
+        INSERT INTO complaint_status_history (
+          complaint_id, status, notes, changed_by, changed_at
+        ) VALUES ($1, $2, $3, $4, NOW())
+      `;
+      
+      await client.query(historyQuery, [
+        updatedComplaint.id,
+        status,
+        notes || `Status changed to ${status}`,
+        userId
+      ]);
+    }
     
     await client.query('COMMIT');
     

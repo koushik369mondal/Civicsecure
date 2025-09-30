@@ -86,6 +86,7 @@ function App() {
     setCurrentPage("dashboard");
     setSidebarOpen(false);
     localStorage.removeItem("NaiyakSetuUser");
+    localStorage.removeItem("token"); // Clear the authentication token
     
     // Clear any notifications
     setNotifications([]);

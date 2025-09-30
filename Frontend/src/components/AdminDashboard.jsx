@@ -254,10 +254,22 @@ export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLo
     
     setUpdateLoading(true);
     try {
-      await complaintAPI.updateComplaintStatus(selectedComplaint.complaint_id, {
+      // Check if we have a token
+      const token = localStorage.getItem('token');
+      console.log('Current token in localStorage:', token ? 'Present' : 'Missing');
+      
+      console.log('Updating complaint status:', {
+        complaintId: selectedComplaint.complaint_id,
         status: editForm.status,
         notes: editForm.notes
       });
+      
+      const response = await complaintAPI.updateComplaintStatus(selectedComplaint.complaint_id, {
+        status: editForm.status,
+        notes: editForm.notes
+      });
+      
+      console.log('Status update response:', response);
       
       // Refresh dashboard data
       await fetchAdminDashboardData();
@@ -272,7 +284,9 @@ export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLo
       
     } catch (error) {
       console.error('Error updating complaint status:', error);
-      setError('Failed to update complaint status');
+      console.error('Error response:', error.response);
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
+      setError(`Failed to update complaint status: ${errorMessage}`);
     } finally {
       setUpdateLoading(false);
     }
