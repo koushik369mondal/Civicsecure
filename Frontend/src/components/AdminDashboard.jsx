@@ -157,17 +157,20 @@ export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLo
       <div className="bg-green-800 rounded-xl shadow-lg p-6 lg:p-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="mb-4 lg:mb-0">
-            <h1 className="text-3xl lg:text-4xl font-bold mb-2 text-white">
+            <h1
+              className="text-3xl lg:text-4xl font-bold mb-2"
+              style={{ color: "#ffffff" }}
+            >
               Admin Dashboard
             </h1>
-            <p className="text-lg text-white opacity-90">
+            <p className="text-lg" style={{ color: "#ffffff" }}>
               Welcome back, {user?.name}! Here's your system overview.
             </p>
           </div>
           <div className="flex items-center space-x-3">
             <div className="flex items-center bg-white bg-opacity-20 px-4 py-2 rounded-lg">
-              <FaChartLine className="mr-2 text-white" />
-              <span className="text-sm text-white font-medium">System Active</span>
+              <FaChartLine className="mr-2 text-black" />
+              <span className="text-sm text-black font-medium">System Active</span>
             </div>
           </div>
         </div>
