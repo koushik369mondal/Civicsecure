@@ -163,15 +163,99 @@ const getUserComplaints = async (req, res) => {
     } = req.query;
     
     const offset = (parseInt(page) - 1) * parseInt(limit);
+    const userId = req.user?.id;
     
-    // Build WHERE clause
+    // For demo users, return sample complaints instead of querying with invalid UUID
+    if (userId && (userId.startsWith('demo-') || !userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))) {
+      console.log('Demo user detected, returning sample complaints for:', userId);
+      
+      // Sample complaints for demo users
+      const sampleComplaints = [
+        {
+          id: 'demo-complaint-1',
+          complaintId: 'CMP-2024-001',
+          title: 'Street Light Not Working',
+          category: 'Public Safety',
+          description: 'The street light on Main Road has been malfunctioning for the past week.',
+          status: 'in_progress',
+          priority: 'medium',
+          reporterType: 'registered',
+          contactMethod: 'email',
+          phone: req.user.phone || '',
+          location: {
+            address: '123 Main Road, City Center',
+            latitude: 12.9716,
+            longitude: 77.5946,
+            formatted: '123 Main Road, City Center'
+          },
+          department: 'Electricity',
+          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+        },
+        {
+          id: 'demo-complaint-2',
+          complaintId: 'CMP-2024-002',
+          title: 'Water Supply Issue',
+          category: 'Water Supply',
+          description: 'No water supply in our area for the past 3 days.',
+          status: 'submitted',
+          priority: 'high',
+          reporterType: 'registered',
+          contactMethod: 'phone',
+          phone: req.user.phone || '',
+          location: {
+            address: '456 Park Avenue, Suburb',
+            latitude: 12.9716,
+            longitude: 77.5946,
+            formatted: '456 Park Avenue, Suburb'
+          },
+          department: 'Water Supply',
+          createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      ];
+      
+      // Apply filters to sample data
+      let filteredComplaints = sampleComplaints;
+      if (status) {
+        filteredComplaints = filteredComplaints.filter(c => c.status === status);
+      }
+      if (category) {
+        filteredComplaints = filteredComplaints.filter(c => c.category === category);
+      }
+      if (priority) {
+        filteredComplaints = filteredComplaints.filter(c => c.priority === priority);
+      }
+      
+      // Apply pagination
+      const totalCount = filteredComplaints.length;
+      const totalPages = Math.ceil(totalCount / parseInt(limit));
+      const paginatedComplaints = filteredComplaints.slice(offset, offset + parseInt(limit));
+      
+      return res.json({
+        success: true,
+        data: {
+          complaints: paginatedComplaints,
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages,
+            totalCount,
+            limit: parseInt(limit),
+            hasNextPage: parseInt(page) < totalPages,
+            hasPrevPage: parseInt(page) > 1
+          }
+        }
+      });
+    }
+    
+    // Build WHERE clause for real users
     let whereClause = '1=1';
     const queryParams = [];
     let paramCounter = 1;
     
-    if (req.user?.id) {
+    if (userId) {
       whereClause += ` AND user_id = $${paramCounter}`;
-      queryParams.push(req.user.id);
+      queryParams.push(userId);
       paramCounter++;
     }
     
@@ -366,10 +450,12 @@ const getComplaintById = async (req, res) => {
 const getUserComplaintStats = async (req, res) => {
   try {
     const userId = req.user?.id;
+    let result;
     
     // For demo users, return sample stats instead of querying with invalid UUID
     if (userId && (userId.startsWith('demo-') || !userId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))) {
-      const result = {
+      console.log('Demo user detected, returning sample stats for:', userId);
+      result = {
         rows: [{
           total_complaints: '5',
           submitted_count: '1',
@@ -382,24 +468,72 @@ const getUserComplaintStats = async (req, res) => {
         }]
       };
     } else {
-      const statsQuery = `
-        SELECT 
-          COUNT(*) as total_complaints,
-          COUNT(CASE WHEN status = 'submitted' THEN 1 END) as submitted_count,
-          COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress_count,
-          COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved_count,
-          COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed_count,
-          COUNT(CASE WHEN priority = 'urgent' THEN 1 END) as urgent_count,
-          COUNT(CASE WHEN priority = 'high' THEN 1 END) as high_priority_count,
-          AVG(CASE WHEN resolved_at IS NOT NULL THEN 
-            EXTRACT(EPOCH FROM (resolved_at - created_at))/86400 
-          END) as avg_resolution_days
-        FROM complaints 
-        WHERE user_id = $1 OR $1 IS NULL
-      `;
+      console.log('Querying real stats for user:', userId);
       
-      var result = await pool.query(statsQuery, [userId]);
+      let statsQuery, queryParams;
+      
+      if (userId) {
+        // Query for specific user
+        statsQuery = `
+          SELECT 
+            COUNT(*) as total_complaints,
+            COUNT(CASE WHEN status = 'submitted' THEN 1 END) as submitted_count,
+            COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress_count,
+            COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved_count,
+            COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed_count,
+            COUNT(CASE WHEN priority = 'urgent' THEN 1 END) as urgent_count,
+            COUNT(CASE WHEN priority = 'high' THEN 1 END) as high_priority_count,
+            AVG(CASE WHEN resolved_at IS NOT NULL THEN 
+              EXTRACT(EPOCH FROM (resolved_at - created_at))/86400 
+            END) as avg_resolution_days
+          FROM complaints 
+          WHERE user_id = $1
+        `;
+        queryParams = [userId];
+      } else {
+        // Query for all complaints (admin view)
+        statsQuery = `
+          SELECT 
+            COUNT(*) as total_complaints,
+            COUNT(CASE WHEN status = 'submitted' THEN 1 END) as submitted_count,
+            COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress_count,
+            COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved_count,
+            COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed_count,
+            COUNT(CASE WHEN priority = 'urgent' THEN 1 END) as urgent_count,
+            COUNT(CASE WHEN priority = 'high' THEN 1 END) as high_priority_count,
+            AVG(CASE WHEN resolved_at IS NOT NULL THEN 
+              EXTRACT(EPOCH FROM (resolved_at - created_at))/86400 
+            END) as avg_resolution_days
+          FROM complaints
+        `;
+        queryParams = [];
+      }
+      
+      result = await pool.query(statsQuery, queryParams);
     }
+    
+    // Ensure result and result.rows exist
+    if (!result || !result.rows || result.rows.length === 0) {
+      console.log('No stats data found, returning empty stats');
+      return res.json({
+        success: true,
+        data: {
+          totalComplaints: 0,
+          statusCounts: {
+            submitted: 0,
+            inProgress: 0,
+            resolved: 0,
+            closed: 0
+          },
+          priorityCounts: {
+            urgent: 0,
+            high: 0
+          },
+          averageResolutionDays: null
+        }
+      });
+    }
+    
     const stats = result.rows[0];
     
     res.json({
