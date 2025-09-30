@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash, FaUser, FaLock, FaPhone, FaIdCard } from "react-icons/fa";
-import { supabaseAuth, userProfileAPI } from "../services/supabase";
+import { supabaseAuth } from "../services/supabase";
+import { userProfileAPI } from "../services/api";
 
 export default function SignUp({ onSignUpSuccess, onSwitchToSignIn }) {
   const [formData, setFormData] = useState({
@@ -79,24 +80,33 @@ export default function SignUp({ onSignUpSuccess, onSwitchToSignIn }) {
       );
       
       if (error) {
-        setError(error.message);
+        // Handle specific Supabase error messages
+        if (error.message.includes('already registered')) {
+          setError('An account with this email already exists. Please sign in instead.');
+        } else if (error.message.includes('User already registered')) {
+          setError('An account with this email already exists. Please sign in instead.');
+        } else if (error.message.includes('already been registered')) {
+          setError('An account with this email already exists. Please sign in instead.');
+        } else {
+          setError(error.message);
+        }
         setIsLoading(false);
         return;
       }
 
       if (data.user) {
-        // Create user profile in our users table
+        // Create user profile in our user_profiles table
         const profileData = {
+          user_id: data.user.id,
           email: data.user.email,
-          full_name: formData.fullName.trim(),
+          name: formData.fullName.trim(),
           phone: formData.phone.trim(),
-          role: 'customer',
-          is_verified: false
+          avatar_url: null
         };
 
-        const { error: profileError } = await userProfileAPI.createProfile(data.user.id, profileData);
-        
-        if (profileError) {
+        try {
+          await userProfileAPI.createProfile(profileData);
+        } catch (profileError) {
           console.error("Profile creation error:", profileError);
           // Don't block signup if profile creation fails
         }
@@ -108,7 +118,7 @@ export default function SignUp({ onSignUpSuccess, onSwitchToSignIn }) {
           name: formData.fullName.trim(),
           role: 'customer',
           phone: formData.phone.trim(),
-          is_verified: false
+          is_verified: data.user.email_confirmed_at ? true : false
         };
 
         // Show success message

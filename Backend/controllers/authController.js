@@ -1,4 +1,5 @@
 const pool = require('../db');
+const bcrypt = require('bcrypt');
 const { generateOTP, generateToken, sanitizeUser, errorResponse, successResponse } = require('../utils/helpers');
 const { OTP_EXPIRY_MINUTES, OTP_MAX_ATTEMPTS } = require('../utils/constants');
 
@@ -165,8 +166,132 @@ const validateTokenController = async (req, res) => {
   }
 };
 
+// Email/Password Registration
+const registerController = async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    const { fullName, email, phone, password } = req.body;
+
+    // Validate required fields
+    if (!fullName || !email || !password) {
+      return res.status(400).json(errorResponse('Full name, email, and password are required'));
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json(errorResponse('Invalid email format'));
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      return res.status(400).json(errorResponse('Password must be at least 6 characters long'));
+    }
+
+    // Check if user already exists
+    const existingUser = await client.query(
+      'SELECT id FROM users WHERE email = $1 OR phone = $2',
+      [email, phone]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json(errorResponse('User with this email or phone already exists'));
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create user
+    const userResult = await client.query(
+      `INSERT INTO users (full_name, email, phone, password, is_verified, role) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING id, full_name, email, phone, role, is_verified, created_at`,
+      [fullName, email, phone, hashedPassword, true, 'customer'] // Set as verified for now
+    );
+
+    const user = userResult.rows[0];
+    const token = generateToken(user.id, user.email);
+
+    await client.query('COMMIT');
+
+    res.status(201).json(successResponse({
+      token,
+      user: sanitizeUser(user)
+    }, 'Registration successful'));
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Registration error:', error);
+    res.status(500).json(errorResponse('Internal server error'));
+  } finally {
+    client.release();
+  }
+};
+
+// Email/Password Login
+const loginController = async (req, res) => {
+  const client = await pool.connect();
+  
+  try {
+    const { email, password } = req.body;
+
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json(errorResponse('Email and password are required'));
+    }
+
+    // Find user
+    const userResult = await client.query(
+      'SELECT id, full_name, email, phone, password, role, is_verified FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(400).json(errorResponse('Invalid email or password'));
+    }
+
+    const user = userResult.rows[0];
+
+    // Check if user is verified
+    if (!user.is_verified) {
+      return res.status(400).json(errorResponse('Email not confirmed. Please verify your account.'));
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(400).json(errorResponse('Invalid email or password'));
+    }
+
+    // Update last login
+    await client.query(
+      'UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [user.id]
+    );
+
+    const token = generateToken(user.id, user.email);
+
+    res.json(successResponse({
+      token,
+      user: sanitizeUser(user)
+    }, 'Login successful'));
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json(errorResponse('Internal server error'));
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   sendOTPController,
   verifyOTPController,
-  validateTokenController
+  validateTokenController,
+  registerController,
+  loginController
 };

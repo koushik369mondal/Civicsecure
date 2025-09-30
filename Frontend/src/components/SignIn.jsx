@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FaEye, FaEyeSlash, FaUser, FaLock } from "react-icons/fa";
-import { supabaseAuth, userProfileAPI } from "../services/supabase";
+import { supabaseAuth } from "../services/supabase";
+import { userProfileAPI } from "../services/api";
 
 // Demo users for fallback authentication
 const demoUsers = {
@@ -48,6 +49,7 @@ export default function SignIn({ onLoginSuccess, onSwitchToSignUp }) {
         
         // Store token for API calls
         localStorage.setItem('token', demoToken);
+        localStorage.setItem('user', JSON.stringify(userData));
         
         onLoginSuccess(userData);
         setIsLoading(false);
@@ -58,24 +60,56 @@ export default function SignIn({ onLoginSuccess, onSwitchToSignUp }) {
       const { data, error } = await supabaseAuth.signIn(email.trim().toLowerCase(), password);
       
       if (error) {
-        setError(error.message || "Invalid credentials — please check your email and password and try again.");
+        // Handle specific error messages
+        if (error.message.includes('Email not confirmed')) {
+          setError("Please check your email and click the confirmation link before signing in. Check your spam folder if you don't see it.");
+        } else if (error.message.includes('Invalid login credentials')) {
+          setError("Invalid email or password. Please check your credentials and try again.");
+        } else {
+          setError(error.message || "Invalid credentials — please check your email and password and try again.");
+        }
         setIsLoading(false);
         return;
       }
 
       if (data.user) {
-        // Get user profile from our users table
-        const { data: profile, error: profileError } = await userProfileAPI.getProfile(data.user.id);
-        
-        const userData = {
-          id: data.user.id,
-          email: data.user.email,
-          name: profile?.full_name || data.user.user_metadata?.full_name || data.user.email,
-          role: profile?.role || 'customer',
-          phone: profile?.phone || data.user.user_metadata?.phone || '',
-          is_verified: profile?.is_verified || false
-        };
+        // Check if email is confirmed
+        if (!data.user.email_confirmed_at) {
+          setError("Please check your email and click the confirmation link before signing in. Check your spam folder if you don't see it.");
+          setIsLoading(false);
+          return;
+        }
 
+        // Get user profile from our user_profiles table
+        let userData;
+        try {
+          const profileResponse = await userProfileAPI.getProfile(data.user.id);
+          const profile = profileResponse.profile;
+          
+          userData = {
+            id: data.user.id,
+            email: data.user.email,
+            name: profile?.name || data.user.user_metadata?.full_name || data.user.email,
+            role: profile?.role || 'customer',
+            phone: profile?.phone || data.user.user_metadata?.phone || '',
+            is_verified: profile?.is_verified || data.user.email_confirmed_at ? true : false
+          };
+        } catch (profileError) {
+          console.error("Profile fetch error:", profileError);
+          // Create basic user data if profile doesn't exist
+          userData = {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.user_metadata?.full_name || data.user.email,
+            role: 'customer',
+            phone: data.user.user_metadata?.phone || '',
+            is_verified: data.user.email_confirmed_at ? true : false
+          };
+        }
+
+        // Store user data for the session
+        localStorage.setItem('user', JSON.stringify(userData));
+        
         // Call the success callback with user data
         onLoginSuccess(userData);
       }

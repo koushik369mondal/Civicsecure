@@ -4,10 +4,10 @@
 -- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Users table (simplified, can work with Supabase Auth)
-CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE,
+-- User Profiles table (works with Supabase Auth)
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email VARCHAR(255),
     full_name VARCHAR(255),
     phone VARCHAR(20),
     role VARCHAR(50) DEFAULT 'customer',
@@ -119,6 +119,8 @@ CREATE INDEX IF NOT EXISTS idx_complaints_created_at ON complaints(created_at);
 CREATE INDEX IF NOT EXISTS idx_complaints_location ON complaints(location_latitude, location_longitude);
 CREATE INDEX IF NOT EXISTS idx_complaint_id ON complaints(complaint_id);
 
+CREATE INDEX IF NOT EXISTS idx_user_profiles_email ON user_profiles(email);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_role ON user_profiles(role);
 CREATE INDEX IF NOT EXISTS idx_attachments_complaint_id ON complaint_attachments(complaint_id);
 CREATE INDEX IF NOT EXISTS idx_status_history_complaint_id ON complaint_status_history(complaint_id);
 CREATE INDEX IF NOT EXISTS idx_comments_complaint_id ON complaint_comments(complaint_id);

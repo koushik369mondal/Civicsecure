@@ -62,14 +62,22 @@ api.interceptors.response.use(
 );
 
 export const authAPI = {
+    // Email/Password authentication
+    register: (userData) =>
+        api.post('/auth/register', userData),
+        
+    login: (credentials) =>
+        api.post('/auth/login', credentials),
+
+    // Phone/OTP authentication  
     sendOTP: (phoneNumber) =>
-        api.post('/send-otp', { phoneNumber }),
+        api.post('/auth/send-otp', { phoneNumber }),
 
     verifyOTP: (phoneNumber, otp) =>
-        api.post('/verify-otp', { phoneNumber, otp }),
+        api.post('/auth/verify-otp', { phoneNumber, otp }),
 
     validateToken: () =>
-        api.get('/validate-token'),
+        api.get('/auth/validate-token'),
 
     getProfile: () =>
         api.get('/user/profile'),
@@ -103,6 +111,24 @@ export const complaintAPI = {
     
     getComplaintStats: () =>
         api.get('/complaints/stats')
+};
+
+// User Profile API
+export const userProfileAPI = {
+    createProfile: async (profileData) => {
+        const response = await api.post('/users/user-profile', profileData);
+        return response.data;
+    },
+    
+    getProfile: async (userId) => {
+        const response = await api.get(`/users/user-profile/${userId}`);
+        return response.data;
+    },
+    
+    updateProfile: async (userId, profileData) => {
+        const response = await api.put(`/users/user-profile/${userId}`, profileData);
+        return response.data;
+    }
 };
 
 export default api;

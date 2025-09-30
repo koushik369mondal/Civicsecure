@@ -199,9 +199,32 @@ app.get("/api/complaints/stats", async (req, res) => {
 // ================================
 
 // Route registrations with rate limiting
-app.use('/api/auth', otpLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/users', userRoutes);
+
+// Anonymous complaint submission (no authentication required)
+app.post('/api/complaints/anonymous', async (req, res) => {
+  try {
+    // Create a temporary request object that mimics authenticated request
+    const mockReq = {
+      ...req,
+      user: null // No user for anonymous complaints
+    };
+
+    // Import the complaint controller
+    const { createComplaint } = require('./controllers/complaintController');
+    
+    // Call the existing createComplaint function
+    await createComplaint(mockReq, res);
+  } catch (error) {
+    console.error('Anonymous complaint submission error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit complaint'
+    });
+  }
+});
 
 // ================================
 // GENERAL ROUTES
