@@ -41,6 +41,26 @@ const updateProfileController = async (req, res) => {
       return res.status(400).json(errorResponse('User ID is required'));
     }
 
+    // Check if this is a demo user
+    if (userId.startsWith('demo-')) {
+      // For demo users, return a success response but don't actually update anything
+      const demoProfile = {
+        user_id: userId,
+        name: fullName || req.user.name,
+        email: email || req.user.email,
+        phone: phone || req.user.phone,
+        avatar_url: '',
+        role: req.user.role,
+        is_verified: req.user.is_verified,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      return res.json(successResponse({
+        profile: demoProfile
+      }, 'Demo profile updated successfully (simulated)'));
+    }
+
     // First check if profile exists
     const existingProfile = await pool.query(
       'SELECT * FROM user_profiles WHERE user_id = $1',
@@ -129,10 +149,34 @@ const getProfileController = async (req, res) => {
     const { email } = req.query;
     const currentUserId = req.user?.id;
     
+    // Check if this is a demo user
+    if (currentUserId && currentUserId.startsWith('demo-')) {
+      // Return demo user profile from req.user data
+      const demoProfile = {
+        user_id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        phone: req.user.phone || '',
+        avatar_url: '',
+        role: req.user.role,
+        is_verified: req.user.is_verified,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      return res.json(successResponse({
+        profile: demoProfile
+      }, 'Demo profile retrieved successfully'));
+    }
+    
     let query;
     let queryParams;
     
     if (userId) {
+      // Check if requested userId is a demo user
+      if (userId.startsWith('demo-')) {
+        return res.status(400).json(errorResponse('Demo user profiles cannot be accessed by ID'));
+      }
       query = 'SELECT * FROM user_profiles WHERE user_id = $1';
       queryParams = [userId];
     } else if (email) {
@@ -177,6 +221,26 @@ const getCurrentProfileController = async (req, res) => {
     
     if (!userId && !userEmail) {
       return res.status(401).json(errorResponse('User not authenticated'));
+    }
+    
+    // Check if this is a demo user
+    if (userId && userId.startsWith('demo-')) {
+      // Return demo user profile from req.user data
+      const demoProfile = {
+        user_id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        phone: req.user.phone || '',
+        avatar_url: '',
+        role: req.user.role,
+        is_verified: req.user.is_verified,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      return res.json(successResponse({
+        profile: demoProfile
+      }, 'Demo profile retrieved successfully'));
     }
     
     let query;

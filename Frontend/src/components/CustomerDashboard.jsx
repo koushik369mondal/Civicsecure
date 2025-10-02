@@ -55,7 +55,7 @@ export default function CustomerDashboard({
         
         // Try to fetch user-specific complaints
         const complaintsResponse = await complaintAPI.getUserComplaints({ limit: 5, sort: 'created_at', order: 'DESC' });
-        complaintsData = complaintsResponse.data.data;
+        complaintsData = complaintsResponse.data.data?.complaints || [];
         
       } catch (authError) {
         console.log('Authentication failed, falling back to public endpoints:', authError);
