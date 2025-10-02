@@ -3,8 +3,8 @@ services:
     name: naiyaksetu-backend
     env: node
     plan: free
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: yarn install --production=false
+    startCommand: node app.js
     envVars:
       - key: NODE_ENV
         value: production
