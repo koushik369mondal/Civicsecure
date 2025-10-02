@@ -392,3 +392,274 @@ h1, h2, h3, h4, h5, h6 {
     color: black;
   }
 }
+
+/* ==============================
+   GBOT CHATBOT STYLES
+   ============================== */
+
+/* --- Global Styles & Enhanced Theme --- */
+.gbot-chatbot-icon,
+.gbot-chat-window {
+  --gbot-primary-gradient: linear-gradient(45deg, #007BFF, #673AB7);
+  --gbot-primary-color-start: #007BFF;
+  --gbot-bot-bg: #F1F3F4;
+  --gbot-user-bg-gradient: linear-gradient(45deg, #007BFF, #3f51b5);
+  --gbot-user-text: #ffffff;
+  --gbot-bg-color: #ffffff;
+  --gbot-border-radius: 15px;
+  --gbot-shadow-color: rgba(103, 58, 183, 0.25);
+  --gbot-smooth-bezier: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* --- Keyframe Animations --- */
+@keyframes gbotFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes gbotPopIn {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- Enhanced Chatbot Icon --- */
+.gbot-chatbot-icon {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 60px;
+  height: 60px;
+  background: var(--gbot-primary-gradient);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 5px 20px var(--gbot-shadow-color);
+  transition: all 0.4s var(--gbot-smooth-bezier);
+  z-index: 999;
+  animation: gbotPopIn 0.5s ease-out 0.2s backwards;
+}
+
+.gbot-chatbot-icon:hover {
+  transform: scale(1.15);
+  box-shadow: 0 8px 25px var(--gbot-shadow-color);
+}
+
+/* Smooth icon cross-fade */
+.gbot-chatbot-icon svg {
+  position: absolute;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.gbot-chatbot-icon .gbot-chat-bubble-icon {
+  transform: scale(1) rotate(0deg);
+  opacity: 1;
+}
+.gbot-chatbot-icon.gbot-open .gbot-chat-bubble-icon {
+  transform: scale(0) rotate(-90deg);
+  opacity: 0;
+}
+
+.gbot-chatbot-icon .gbot-close-icon {
+  transform: scale(0) rotate(90deg);
+  opacity: 0;
+}
+.gbot-chatbot-icon.gbot-open .gbot-close-icon {
+  transform: scale(1) rotate(0deg);
+  opacity: 1;
+}
+
+/* --- Enhanced Chat Window --- */
+.gbot-chat-window {
+  position: fixed;
+  bottom: 100px;
+  right: 25px;
+  width: 370px;
+  height: 550px;
+  background-color: var(--gbot-bg-color);
+  border-radius: var(--gbot-border-radius);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.4s var(--gbot-smooth-bezier), opacity 0.3s ease-out;
+  transform-origin: bottom right;
+  z-index: 1000;
+}
+
+/* Open/Close Animation */
+.gbot-chat-window.gbot-closed {
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gbot-chat-window.gbot-open {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* --- Enhanced Chat Header --- */
+.gbot-chat-header {
+  background: var(--gbot-primary-gradient);
+  color: white;
+  padding: 20px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  border-top-left-radius: var(--gbot-border-radius);
+  border-top-right-radius: var(--gbot-border-radius);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* --- Polished Messages Area --- */
+.gbot-chat-messages {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Custom Scrollbar */
+.gbot-chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+.gbot-chat-messages::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+.gbot-chat-messages::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+.gbot-chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+.gbot-message {
+  padding: 12px 18px;
+  border-radius: 20px;
+  max-width: 85%;
+  animation: gbotFadeIn 0.5s ease-in-out;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.gbot-message.gbot-bot {
+  background-color: var(--gbot-bot-bg);
+  color: #333;
+  align-self: flex-start;
+  border-bottom-left-radius: 5px;
+}
+
+.gbot-message.gbot-user {
+  background: var(--gbot-user-bg-gradient);
+  color: var(--gbot-user-text);
+  align-self: flex-end;
+  border-bottom-right-radius: 5px;
+}
+
+/* --- Interactive Options / Buttons --- */
+.gbot-options-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+    animation: gbotFadeIn 0.5s 0.2s backwards; /* Delayed animation */
+}
+
+.gbot-option-button {
+    background-color: #fff;
+    border: 1px solid var(--gbot-primary-color-start);
+    color: var(--gbot-primary-color-start);
+    padding: 8px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.25s ease;
+}
+
+.gbot-option-button:hover {
+    background: var(--gbot-primary-color-start);
+    color: #fff;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.2);
+}
+
+/* --- Refined Input Area --- */
+.gbot-chat-input-container {
+  display: flex;
+  padding: 15px 20px;
+  border-top: 1px solid #e9ecef;
+  background-color: #fff;
+}
+
+.gbot-chat-input {
+  flex-grow: 1;
+  border: 1px solid #ced4da;
+  border-radius: 20px;
+  padding: 12px 18px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.gbot-chat-input:focus {
+  border-color: var(--gbot-primary-color-start);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
+}
+
+.gbot-send-button {
+  background: var(--gbot-primary-gradient);
+  border: none;
+  color: white;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  margin-left: 10px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.gbot-send-button:hover {
+  transform: scale(1.1) rotate(15deg);
+  box-shadow: 0 4px 15px var(--gbot-shadow-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .gbot-chat-window {
+    width: 320px;
+    height: 500px;
+    bottom: 90px;
+    right: 15px;
+  }
+  
+  .gbot-chatbot-icon {
+    bottom: 20px;
+    right: 20px;
+    width: 55px;
+    height: 55px;
+  }
+}

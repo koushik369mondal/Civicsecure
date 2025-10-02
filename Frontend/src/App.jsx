@@ -10,6 +10,7 @@ import Tracking from "./components/Tracking";
 import Chat from "./components/Chat";
 import InfoHub from "./components/InfoHub";
 import Community from "./components/Community";
+import Gbot from "./components/Gbot";
 
 function App() {
   // Authentication State
@@ -233,6 +234,9 @@ function App() {
           ))}
         </div>
       )}
+      
+      {/* AI Chatbot - Available on all pages */}
+      <Gbot />
     </div>
   );
 }
