@@ -543,63 +543,73 @@ export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLo
 
       {/* View Modal */}
       {showViewModal && selectedComplaint && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Complaint Details</h3>
-              <button
-                onClick={closeModals}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <FaTimes className="h-6 w-6" />
-              </button>
-            </div>
+        <div 
+          className="fixed inset-0 z-50 overflow-y-auto"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)'
+          }}
+        >
+          <div className="fixed inset-0" onClick={closeModals}></div>
+          <div className="relative min-h-screen flex items-center justify-center p-4">
+            <div className="relative mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Complaint Details</h3>
+                <button
+                  onClick={closeModals}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <FaTimes className="h-6 w-6" />
+                </button>
+              </div>
             
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Complaint ID</label>
-                <p className="text-gray-900">{selectedComplaint.complaint_id}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Title</label>
-                <p className="text-gray-900">{selectedComplaint.title}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Category</label>
-                <p className="text-gray-900 capitalize">{selectedComplaint.category}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Description</label>
-                <p className="text-gray-900">{selectedComplaint.description}</p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(formatStatus(selectedComplaint.status))}`}>
-                    {formatStatus(selectedComplaint.status)}
-                  </span>
+                  <label className="block text-sm font-medium text-gray-700">Complaint ID</label>
+                  <p className="text-gray-900">{selectedComplaint.complaint_id}</p>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Priority</label>
-                  <span className={`font-medium capitalize ${getPriorityColor(selectedComplaint.priority)}`}>
-                    {selectedComplaint.priority}
-                  </span>
+                  <label className="block text-sm font-medium text-gray-700">Title</label>
+                  <p className="text-gray-900">{selectedComplaint.title}</p>
                 </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Location</label>
-                <p className="text-gray-900">{selectedComplaint.location_address || 'Not specified'}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Created At</label>
-                <p className="text-gray-900">{new Date(selectedComplaint.created_at).toLocaleString()}</p>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Category</label>
+                  <p className="text-gray-900 capitalize">{selectedComplaint.category}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <p className="text-gray-900">{selectedComplaint.description}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Status</label>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(formatStatus(selectedComplaint.status))}`}>
+                      {formatStatus(selectedComplaint.status)}
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Priority</label>
+                    <span className={`font-medium capitalize ${getPriorityColor(selectedComplaint.priority)}`}>
+                      {selectedComplaint.priority}
+                    </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Location</label>
+                  <p className="text-gray-900">{selectedComplaint.location_address || 'Not specified'}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Created At</label>
+                  <p className="text-gray-900">{new Date(selectedComplaint.created_at).toLocaleString()}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -608,78 +618,88 @@ export default function AdminDashboard({ user, sidebarOpen, setSidebarOpen, onLo
 
       {/* Edit Modal */}
       {showEditModal && selectedComplaint && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Edit Complaint</h3>
-              <button
-                onClick={closeModals}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <FaTimes className="h-6 w-6" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Complaint ID</label>
-                <p className="text-gray-900">{selectedComplaint.complaint_id}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Title</label>
-                <p className="text-gray-900">{selectedComplaint.title}</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select
-                  value={editForm.status}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="submitted">Pending</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="closed">Closed</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
-                <textarea
-                  value={editForm.notes}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="Add notes about this status change..."
-                />
-              </div>
-              
-              <div className="flex justify-end space-x-3 pt-4">
+        <div 
+          className="fixed inset-0 z-50 overflow-y-auto"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)'
+          }}
+        >
+          <div className="fixed inset-0" onClick={closeModals}></div>
+          <div className="relative min-h-screen flex items-center justify-center p-4">
+            <div className="relative mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Edit Complaint</h3>
                 <button
                   onClick={closeModals}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  Cancel
+                  <FaTimes className="h-6 w-6" />
                 </button>
-                <button
-                  onClick={handleStatusUpdate}
-                  disabled={updateLoading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded-md transition-colors flex items-center"
-                >
-                  {updateLoading ? (
-                    <>
-                      <FaSpinner className="animate-spin mr-2" />
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <FaSave className="mr-2" />
-                      Update Status
-                    </>
-                  )}
-                </button>
+              </div>
+            
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Complaint ID</label>
+                  <p className="text-gray-900">{selectedComplaint.complaint_id}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Title</label>
+                  <p className="text-gray-900">{selectedComplaint.title}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="submitted">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                  <textarea
+                    value={editForm.notes}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="Add notes about this status change..."
+                  />
+                </div>
+                
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    onClick={closeModals}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleStatusUpdate}
+                    disabled={updateLoading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 rounded-md transition-colors flex items-center"
+                  >
+                    {updateLoading ? (
+                      <>
+                        <FaSpinner className="animate-spin mr-2" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <FaSave className="mr-2" />
+                        Update Status
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
