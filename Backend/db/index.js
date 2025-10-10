@@ -4,21 +4,22 @@ require("dotenv").config();
 const pool = new Pool({
   user: process.env.DB_USER || "postgres",
   host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_NAME || "civicsecure_db",
+  database: process.env.DB_NAME || "NaiyakSetu_db",
   password: process.env.DB_PASSWORD || "123456",
   port: process.env.DB_PORT || 5432,
+  ssl: process.env.DB_HOST && process.env.DB_HOST.includes('supabase.co') ? { rejectUnauthorized: false } : false,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
   acquireTimeoutMillis: 60000,
 });
 
 // Test database connection
 pool.connect((err, client, release) => {
   if (err) {
-    console.error('❌ Error connecting to PostgreSQL:', err);
+    console.error('❌ Error connecting to Supabase database:', err);
   } else {
-    console.log('✅ Connected to PostgreSQL database');
+    console.log('✅ Connected to Supabase database');
     release();
   }
 });

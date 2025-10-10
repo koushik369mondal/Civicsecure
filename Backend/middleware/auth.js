@@ -13,6 +13,26 @@ const authenticateToken = async (req, res, next) => {
 
     const token = authHeader.substring(7);
 
+    // Check if it's a demo token (base64 encoded JSON)
+    try {
+      const decodedDemo = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+      if (decodedDemo.demo && decodedDemo.user) {
+        // This is a demo token
+        console.log('Demo token detected for user:', decodedDemo.user.email);
+        req.user = {
+          id: decodedDemo.user.id,
+          email: decodedDemo.user.email,
+          name: decodedDemo.user.name,
+          role: decodedDemo.user.role,
+          phone: decodedDemo.user.phone || '',
+          is_verified: decodedDemo.user.is_verified
+        };
+        return next();
+      }
+    } catch (demoError) {
+      // Not a demo token, continue with regular JWT verification
+    }
+
     jwt.verify(token, JWT_SECRET, async (err, decoded) => {
       if (err) {
         let message = 'Invalid token';
